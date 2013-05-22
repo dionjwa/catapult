@@ -1,0 +1,38 @@
+ #Server
+-debug
+-D nodejs
+
+#mconsole
+-cp lib/mconsole/src
+-D mconsole
+
+-lib nodejs_std
+-lib nodejs_externs
+-lib format #Needed for the ods parser
+
+-cp lib/hxods
+-cp src
+
+-main catapult.Server
+
+-js build/index.js
+--remap sys:sys
+
+# --next
+
+# -cmd haxelib run jsmin build/blinkserver.js blinkserver.min.js 2
+
+# #Client
+# -debug
+
+# #mconsole
+# -cp lib/mconsole/src
+# -D mconsole
+
+# -cp lib/hxods
+# -cp src
+
+# -main blink.BlinkServer
+
+# -js build/blinkserver.js
+# --remap sys:sys

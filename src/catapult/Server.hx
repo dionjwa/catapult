@@ -46,7 +46,7 @@ typedef ODSDataChangedMessage = {>FileChangedMessage,
 	var data :Dynamic;
 }
 
-class BlinkServer 
+class Server 
 {
 	inline public static var FILE_CHANGED_MESSAGE_NAME :String = "file_changed"; 
 	inline public static var FILE_CHANGED_MESSAGE_NAME_ODS :String = "file_changed_ods"; 
@@ -73,7 +73,7 @@ class BlinkServer
 	public static function main () :Void
 	{
 		Console.start();
-		new BlinkServer();
+		new Server();
 	}
 	
 	public function new ()
