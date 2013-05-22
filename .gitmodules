@@ -1,0 +1,6 @@
+[submodule "lib/hxods"]
+	path = lib/hxods
+	url = git://github.com/ncannasse/hxods.git
+[submodule "lib/mconsole"]
+	path = lib/mconsole
+	url = git://github.com/massiveinteractive/mconsole.git
