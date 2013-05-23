@@ -149,6 +149,12 @@ class Server
 			return;
 		}
 		
+		//Default
+		serveFile(req, res);
+	}
+	
+	function serveFile(req :NodeHttpServerReq, res :NodeHttpServerResp) :Bool
+	{
 		//Serve the file request
 		var urlObj = Node.url.parse(req.url, true);
 		var firstPathToken = urlObj.pathname.substr(1).split("/")[0];
@@ -174,6 +180,8 @@ class Server
 			res.writeHead(404);
 			res.end();
 		}
+		
+		return true;
 	}
 	
 	function serveManifest(req :NodeHttpServerReq, res :NodeHttpServerResp) :Bool
