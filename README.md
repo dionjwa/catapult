@@ -7,7 +7,7 @@
 
 # Catapult: Automatic asset updater and server.
 
-Why: decrease the game development iteration loop to be as tight as possible.
+Why: decrease the game development iteration loop to be as short as possible.
 
 How: Catapult detects changes in assets, source, and game data files, and is available to notify the game client is different ways: a pushed notification via websockets, or through http polling.
 
@@ -22,6 +22,14 @@ The main goal is to see changes in your game as soon as any change is detected f
 ## Installation
 
 Build from source or install via npm (easier).
+
+### Install via npm
+
+	npm install catapult
+	
+And run with: 
+
+	node node_modules/catapult/index.js --watch=demo/assets/bootstrap
 
 ### Install from source:
 
@@ -43,15 +51,7 @@ Clone this repo and add required dependencies:
 And run with: 
 
 	node build/index.js --watch=demo/assets/bootstrap
-	
 
-### Install via npm
-
-	npm install catapult
-	
-And run with: 
-
-	node node_modules/catapult/index.js --watch=demo/assets/bootstrap
 	
 ### Using the server
 	

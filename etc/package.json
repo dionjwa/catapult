@@ -1,0 +1,29 @@
+{
+  "name": "catapult",
+  "version": "1.0.2",
+  "description": "Game development asset server.  Monitors files for changes and notifies clients of changes, serves spreadsheets as json. ",
+  "main": "index.js",
+  "dependencies": {
+    "commander": "~1.1.1",
+    "source-map-support": "~0.1.5",
+    "websocket": "~1.0.8",
+    "node-static": "~0.6.9",
+    "connect": "~2.7.3"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dionjwa/catapult"
+  },
+  "keywords": [
+    "node.js",
+    "game",
+    "haxe"
+  ],
+  "author": "Dion Whitehead Amago",
+  "license": "BSD",
+  "readmeFilename": "README.md"
+}

@@ -1,0 +1,20 @@
+#!/bin/bash
+# Build and upload to npm
+
+EXPORT_DIR=/tmp/catapult
+
+rm -rf $EXPORT_DIR
+mkdir -p $EXPORT_DIR
+haxe build.hxml
+cp etc/package.json $EXPORT_DIR/
+cp catapult.js $EXPORT_DIR/index.js
+cp README.md $EXPORT_DIR/
+cd $EXPORT_DIR/..
+tar czvf /tmp/catapult.tgz catapult
+rm -rf $EXPORT_DIR
+
+npm publish catapult.tgz
+
+
+
+
