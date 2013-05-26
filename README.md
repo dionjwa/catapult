@@ -26,10 +26,15 @@ Build from source or install via npm (easier).
 ### Install via npm
 
 	npm install catapult
+
+Install the demo folder
+
+	git clone --recursive git://github.com/dionjwa/catapult.git
 	
 And run with: 
 
-	node node_modules/catapult/index.js --watch=demo/assets/bootstrap
+
+	node node_modules/catapult/index.js --watch=catapult/demo/assets/bootstrap
 
 ### Install from source:
 
@@ -71,27 +76,6 @@ To test the websockets, you need the Chrome web browser.
 	You should see the websocket message in the Chrome client.
 
 Ideally you'll want to add some client code to poll or query the server or listen to the websocket messages.  I'll be adding some example client reloading using [Flambe][flambe] soon.
-	
-## Vagrant:
-
-This won't mean much to anyone right now, it's just my own personal notes to getting the vagrant server running.
-
-Server:
-
-	vagrant up
-	vagrant ssh -c "sudo rm -rf /Users"
-	vagrant ssh -c "sudo mkdir -p /Users/dion/storage/projects/haxelibs/"
-	vagrant ssh -c "sudo chown -R vagrant /Users"
-	vagrant ssh -c "cd /Users/dion/storage/projects/haxelibs; sudo ln -s /vagrant flambes"
-	vagrant ssh
-	cd /vagrant
-	haxe -v --wait 0.0.0.0:4001
-	
-Client:
-
-	haxe --cwd /vagrant build.hxml --connect 4000
-	
-The port 4001 is mapped to port 4000 on the host via the Vagrantfile.
 	
 
 
