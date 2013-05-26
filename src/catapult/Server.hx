@@ -419,6 +419,6 @@ class Server
 	
 	static function fileFilter(filePath :String) :Bool
 	{
-		return filePath != null && !Node.path.basename(filePath).startsWith(".");
+		return filePath != null && !(Node.path.basename(filePath).startsWith(".") || filePath.endsWith("cache"));
 	}
 }
