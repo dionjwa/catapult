@@ -75,7 +75,7 @@ Also, try these URLs in your web browser to see the data format of the asset man
 
 	http://localhost:8000/manifests.json
 	http://localhost:8000/bootstrap/stuff/test.ods
-	http://localhost:8000/bootstrap/stuff/gamedata.ods
+	http://localhost:8000/bootstrap/stuff/gamedata.json
 	http://localhost:8000/bootstrap/manifest.json
 	
 ## Building your own client 
