@@ -34,7 +34,7 @@ Install the demo folder
 And run with: 
 
 
-	node node_modules/catapult/index.js --watch=catapult/demo/assets/bootstrap
+	node node_modules/catapult/index.js --watch=catapult/demo/assets/bootstrap,catapult/demo/src
 
 ### Install from source:
 
@@ -55,10 +55,11 @@ Clone this repo and add required dependencies:
 	
 And run with: 
 
-	node build/index.js --watch=demo/assets/bootstrap
-
+	node build/index.js --watch=demo/assets/bootstrap,demo/src
 	
 ### Using the server
+
+![screenshot](https://github.com/dionjwa/catapult/demo/catapult_demo.png)
 	
 Then try these URLs in your web browser:
 
