@@ -59,7 +59,7 @@ And run with:
 	
 ### Using the server
 
-![screenshot](https://github.com/dionjwa/catapult/demo/catapult_demo.png)
+![screenshot](demo/catapult_demo.png)
 	
 Then try these URLs in your web browser:
 
