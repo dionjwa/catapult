@@ -29,6 +29,7 @@ typedef ManifestData = {
 	var md5 :String;
 	var assets :Array<WatchedFile>;
 	var id :String;
+	var relativePath :String;
 }
 
 typedef ServedManifestData = {
@@ -53,7 +54,7 @@ class Server
 	
 	var _websocketServer :WebSocketServer;
 	var _files :Map<String, WatchedFile>; //<filePath, WatchedFile>
-	var _manifests :Map<String, ManifestData>; //<manifestBaseFolderName, WatchedFile>
+	var _manifests :Map<String, ManifestData>; //<manifestBaseFolderName, ManifestData>
 	var _servedFolders :Map<String, StaticServer>;
 	var _port :Int;
 	
@@ -125,8 +126,6 @@ class Server
 		_websocketServer.on('connectFailed', onConnectFailed);
 		_websocketServer.on('request', onWebsocketRequest);
 		_websocketServer.mount(serverConfig);
-		
-		
 	}
 	
 	function onHttpRequest (req :NodeHttpServerReq, res :NodeHttpServerResp) :Void
@@ -159,14 +158,20 @@ class Server
 		var urlObj = Node.url.parse(req.url, true);
 		var firstPathToken = urlObj.pathname.substr(1).split("/")[0];
 		
-		if (_servedFolders.exists(firstPathToken)) {
-			var staticServer :StaticServer = _servedFolders.get(firstPathToken);
+		var fileKey = urlObj.pathname.substr(1);
+		
+		if (_files.exists(fileKey)) {
+			var fileBlob = _files[fileKey];
+			var manifest = _manifests[fileBlob.manifestKey];
+			var staticServer :StaticServer = _servedFolders.get(manifest.relativePath);
+			
 			var tokens = urlObj.pathname.split(Node.path.sep).filter(function(s :String) return s != null && s.length > 0);
 			tokens.shift();
 			var filePath = tokens.join(Node.path.sep);
 			
 			Node.fs.exists(Node.path.join(staticServer.root, filePath), function(exists :Bool) :Void {
 				if (exists) {
+					Console.info("Serving " + filePath);
 					staticServer.serveFile(filePath, 200, null, req, res);
 				} else {
 					Console.warn(filePath + " not found.");
@@ -177,8 +182,13 @@ class Server
 		} else {
 			Console.info(urlObj + "");
 			Console.info(Date.now() + ' Received request for ' + req.url);
-			res.writeHead(404);
-			res.end();
+			
+			res.writeHead(404, { 'Content-Type': 'text/plain' });
+			var manifestKeys = {iterator:_manifests.keys}.array();
+			for (i in 0...manifestKeys.length) {
+				manifestKeys[i] = "http://<host>:" + _port +  "/" + manifestKeys[i] + "/manifest.json";
+			}
+			res.end("No manifest at that path found (firstPathToken=" + firstPathToken + "), possible served folders are [" + {iterator:_servedFolders.keys}.array().join(", ") + "]");
 		}
 		
 		return true;
@@ -260,9 +270,7 @@ class Server
 	
 	function serveOds(req :NodeHttpServerReq, res :NodeHttpServerResp) :Bool
 	{
-		trace("serveOds");
 		if (!req.url.endsWith(".ods")) {
-			trace("Not an ods");
 			return false;
 		}
 		
@@ -363,12 +371,13 @@ class Server
 	
 	function setupFileWatching(paths :Array<String>) :Void
 	{
+		Console.info("Watching paths: " + paths);
 		_files = new Map();
 		for (rootPath in paths) {
 			
 			var baseName = Node.path.basename(rootPath);
 			var fileArray = new Array<WatchedFile>();
-			_manifests.set(baseName, {md5:null, assets:fileArray, id:baseName});	
+			_manifests[baseName] = {md5:null, assets:fileArray, id:baseName, relativePath:rootPath};	
 			
 			var numFilesWatched = 0;
 			for (relativeFilePath in FileSystem.readRecursive(rootPath, fileFilter)) {
@@ -388,7 +397,7 @@ class Server
 					type:""
 				};
 				//The key is what requests will use to get this file: base name + relative path (given in the manifest)
-				_files.set(FileSystem.join(baseName, fileBlob.relativePath), fileBlob);
+				_files[FileSystem.join(baseName, fileBlob.relativePath)] =  fileBlob;
 				fileArray.push(fileBlob);
 				watchFile(fileBlob);
 				numFilesWatched++;
