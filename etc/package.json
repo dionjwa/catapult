@@ -1,6 +1,6 @@
 {
   "name": "catapult",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Game development asset server.  Monitors files for changes and notifies clients of changes, serves spreadsheets as json. ",
   "main": "index.js",
   "dependencies": {
