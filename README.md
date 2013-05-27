@@ -36,7 +36,7 @@ And run with:
 
 	node node_modules/catapult/index.js --watch=catapult/demo/assets/bootstrap,catapult/demo/src
 
-### Install from source:
+### Or Install from source:
 
 The server is at the currently in the experimental stage and is written for [Haxe 3][haxe3], but is platform/language agnostic.  
 
@@ -59,24 +59,30 @@ And run with:
 	
 ### Using the server
 
+In a browser, go to 
+
+	http://localhost:8000/web/index.html
+	
+Then open the "test.ods" file in LibreOffice.  You can edit the x, y, and scale values, and the images will be automatically updated.
+
 ![screenshot](demo/catapult_demo.png)
 	
-Then try these URLs in your web browser:
+
+
+Also, try these URLs in your web browser to see the data format of the asset manifests, and spreadsheet data returned:
 
 	http://localhost:8000/manifests.json
 	http://localhost:8000/bootstrap/stuff/test.ods
 	http://localhost:8000/bootstrap/stuff/gamedata.ods
 	http://localhost:8000/bootstrap/manifest.json
 	
-To test the websockets, you need the Chrome web browser.
-	
-	Install [this plugin](https://chrome.google.com/webstore/detail/simple-websocket-client/pfdhoblngboilpfeibdedpjgfnlcodoo)
-	Open the Simple Websocket Client.
-	In the URL field, enter "localhost:8000" and click "Open".
-	Open demo/assets/bootstrap/stuff/gamedata.json, and change something and save it (e.g. just enter few times for some new lines).
-	You should see the websocket message in the Chrome client.
+## Building your own client 
 
-Ideally you'll want to add some client code to poll or query the server or listen to the websocket messages.  I'll be adding some example client reloading using [Flambe][flambe] soon.
+The catapult server is platform agnostic: you can simply poll the asset server from any client using http requests. 
+
+Todo:
+
+- [ ] Add some example client reloading using [Flambe][flambe].
 	
 
 
