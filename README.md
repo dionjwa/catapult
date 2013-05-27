@@ -65,6 +65,8 @@ In a browser, go to
 	
 Then open the "test.ods" file in LibreOffice.  You can edit the x, y, and scale values, and the images will be automatically updated.
 
+See demo/web/client.js for an example HTML5 implementation of a catapult client. 
+
 ![screenshot](demo/catapult_demo.png)
 	
 
