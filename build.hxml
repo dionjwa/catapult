@@ -15,7 +15,7 @@
 
 -main catapult.Server
 
--js build/index.js
+-js catapult.js
 --remap sys:sys
 
 # --next
@@ -25,14 +25,17 @@
 # #Client
 # -debug
 
-# #mconsole
+#mconsole
 # -cp lib/mconsole/src
 # -D mconsole
 
+# -lib flambe
+
 # -cp lib/hxods
 # -cp src
+# -cp demo
 
-# -main blink.BlinkServer
+# -main assetserver.Client
 
-# -js build/blinkserver.js
+# -js build/client.js
 # --remap sys:sys
