@@ -1,12 +1,25 @@
-String.prototype.endsWith = function(suffix) {
+String.prototype.endsWith = function(suffix) 
+{
     return this.indexOf(suffix, this.length - suffix.length) !== -1;
 };
 
 var images = {};
 var imageWidth = 128;
 var imageHeight = 128;
+var imageData = null;
+var imageUrl = 'http://localhost:8000/bootstrap/images/flameling.png';
 
-function updateImages(data) {
+function updateImages(data, customUrl) 
+{
+	imageData = data;
+	
+	var url = imageUrl;
+	
+	if (customUrl != null)
+	{
+		url = customUrl;
+	}
+	
 	//Create the dom element to hold them
 	// console.log("updating images");
 	var imageContainer = document.getElementById("image_container");
@@ -14,20 +27,32 @@ function updateImages(data) {
 	var map = data.h;
 	var items = map.$items;
 	
-	for (var i=0; i<items.length; i++) {
+	for (var i=0; i<items.length; i++) 
+	{
 		var item = items[i];
 		var imageId = "image_" + i;
-		var image = document.getElementById(imageId);
-		if (image == null) {
-			image = new Image();
-			image.style.position = 'absolute';
-			image.id = imageId;
-			image.src=' http://localhost:8000/bootstrap/images/flameling.png';
-			imageContainer.appendChild(image);
+		var imageDiv = document.getElementById(imageId);
+		if (imageDiv == null) 
+		{
+			imageDiv = document.createElement('div');
+			imageDiv.style.position = 'absolute';
+			imageDiv.id = imageId;
+			imageContainer.appendChild(imageDiv);
+			
+			var image = new Image();
+			imageDiv.appendChild(image);
+			image.src=url;
 		}
 		
-		image.style.left = item.x + "px";
-		image.style.top = item.y + "px";
+		var image = imageDiv.children.item(0);
+		
+		if (customUrl != null)
+		{
+			image.src=url;
+		}
+		
+		imageDiv.style.left = item.x + "px";
+		imageDiv.style.top = item.y + "px";
 		image.style.width = (item.scale * imageWidth) + "px";
 		image.style.height = (item.scale * imageHeight) + "px";
 	}
@@ -37,28 +62,40 @@ function updateImages(data) {
 var connection = new WebSocket('ws://localhost:8000');
 
 // When the connection is open, send some data to the server
-connection.onopen = function () {
+connection.onopen = function () 
+{
 	console.log("Websocket opened");
 	// connection.send('Ping'); // Send the message 'Ping' to the server
 };
 
 // Log errors
-connection.onerror = function (error) {
+connection.onerror = function (error) 
+{
 	console.log('WebSocket Error ' + error);
 };
 
 
 
 // Log messages from the server
-connection.onmessage = function (e) {
-	// console.log('Websocket message received');
-	// console.log('Server: ' + e.data);
+connection.onmessage = function (e) 
+{
+	console.log('Websocket message received:\n' + e.data);
 	
 	var jsonMessage = JSON.parse(e.data);
 	
-	if (jsonMessage.type == "file_changed") {
-		if (jsonMessage.path.endsWith(".js")) {
+	if (jsonMessage.type == "file_changed") 
+	{
+		if (jsonMessage.path.endsWith(".js")) 
+		{
 			window.location.reload();
+		} 
+		else if (jsonMessage.path.endsWith(".png")) 
+		{
+			if (jsonMessage.path.endsWith("flameling.png"))
+			{
+				console.log("Updating image");
+				updateImages(imageData, imageUrl + "?md5=" + jsonMessage.md5);
+			}
 		}
 	}
 	

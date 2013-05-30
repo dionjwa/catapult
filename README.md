@@ -68,6 +68,11 @@ Then open the "test.ods" file in LibreOffice.  You can edit the x, y, and scale 
 See demo/web/client.js for an example HTML5 implementation of a catapult client. 
 
 ![screenshot](demo/catapult_demo.png)
+
+
+Also, change assets such as images and see instant client updates:
+
+![screenshot](demo/catapult_demo2.png)
 	
 
 
