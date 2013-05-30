@@ -1,0 +1,25 @@
+#Client
+-debug
+
+-D enable_flambe_reloading
+-D client
+
+-lib format
+-cp ../remoting/src
+-cp ../t9_public/src
+
+# mconsole
+-cp lib/mconsole/src
+-D mconsole
+
+# -lib flambe
+-cp demo/lib/flambe/src
+-cp ../flambe/src
+
+-cp lib/hxods
+-cp src
+-cp demo
+
+-main flambe.FlambeClient
+
+-js demo/web/flambe_client.js
