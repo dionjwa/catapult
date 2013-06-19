@@ -2,24 +2,27 @@
 -debug
 
 -D enable_flambe_reloading
+-D flambe_keep_logs
 -D client
+-D html
 
 -lib format
--cp ../remoting/src
--cp ../t9_public/src
+# -cp ../remoting/src
+# -cp ../t9_public/src
 
 # mconsole
 -cp lib/mconsole/src
 -D mconsole
 
 # -lib flambe
--cp demo/lib/flambe/src
+# -cp demo/lib/flambe/src
 -cp ../flambe/src
 
 -cp lib/hxods
 -cp src
--cp demo
+-cp demo/src
 
--main flambe.FlambeClient
+-main demo.FlambeClient
 
--js demo/web/flambe_client.js
+# -js demo/web/flambe_client.js
+-js deploy/web/targets/main-html.js

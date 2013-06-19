@@ -1,0 +1,19 @@
+{
+	"port":8000,
+	"address":"0.0.0.0",
+	"file_server_path":"demo/web",
+	"manifests" : [
+		{"id" : "bootstrap", "path" : "demo/assets/bootstrap"}
+	],
+	"paths_to_watch_for_file_changes" : [
+		"src",
+		"deploy/web"
+	],
+	"commands" : [
+		{
+			"suffix" : ".hx",
+			"command": "haxe",
+			"args":["demo/client.hxml"]
+		}
+	]
+}

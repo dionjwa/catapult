@@ -33,8 +33,7 @@ Install the demo folder
 	
 And run with: 
 
-
-	node node_modules/catapult/index.js --watch=catapult/demo/assets/bootstrap,catapult/demo/src
+	node node_modules/catapult/index.js
 
 ### Or Install from source:
 
@@ -55,17 +54,23 @@ Clone this repo and add required dependencies:
 	
 And run with: 
 
-	node build/index.js --watch=demo/assets/bootstrap,demo/src
+	node catapult.js
+	
+Or go to the demo folder and run the same command.
 	
 ### Using the server
 
 In a browser, go to 
 
-	http://localhost:8000/web/index.html
+	http://localhost:8000
 	
 Then open the "test.ods" file in LibreOffice.  You can edit the x, y, and scale values, and the images will be automatically updated.
 
-See demo/web/client.js for an example HTML5 implementation of a catapult client. 
+Open up an image editor, and change the flameling.png.  Saves changes will be automatically loaded.
+
+
+See demo/web/client.js for an example HTML5 implementation of a catapult client.
+See demo/src/demo/FlambeClient.hx for an example Flambe implementation of a catapult client.
 
 ![screenshot](demo/catapult_demo.png)
 
@@ -89,7 +94,7 @@ The catapult server is platform agnostic: you can simply poll the asset server f
 
 Todo:
 
-- [ ] Add some example client reloading using [Flambe][flambe].
+- [x] Add some example client reloading using [Flambe][flambe].
 	
 
 

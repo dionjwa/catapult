@@ -1,0 +1,10 @@
+{
+	"port":8000,
+	"address":"0.0.0.0",
+	"file_server_path":"web",
+	"manifests" : [
+		{"id" : "bootstrap", "path" : "assets/bootstrap"}
+	],
+	"paths_to_watch_for_file_changes" : [],
+	"commands" : []
+}

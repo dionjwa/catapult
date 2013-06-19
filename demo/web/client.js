@@ -85,13 +85,13 @@ connection.onmessage = function (e)
 	
 	if (jsonMessage.type == "file_changed") 
 	{
-		if (jsonMessage.path.endsWith(".js")) 
+		if (jsonMessage.name.endsWith(".js")) 
 		{
 			window.location.reload();
 		} 
-		else if (jsonMessage.path.endsWith(".png")) 
+		else if (jsonMessage.name.endsWith(".png")) 
 		{
-			if (jsonMessage.path.endsWith("flameling.png"))
+			if (jsonMessage.name.endsWith("flameling.png"))
 			{
 				console.log("Updating image");
 				updateImages(imageData, imageUrl + "?md5=" + jsonMessage.md5);
@@ -99,7 +99,7 @@ connection.onmessage = function (e)
 		}
 	}
 	
-	if (jsonMessage.type == "file_changed_ods" && jsonMessage.path == "stuff/test.ods") {
+	if (jsonMessage.type == "file_changed_ods" && jsonMessage.name == "stuff/test.ods") {
 		updateImages(jsonMessage.data);
 	}
 };
