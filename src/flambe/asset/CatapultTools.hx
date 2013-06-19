@@ -227,7 +227,7 @@ class CatapultTools
 			for (asset in manifestData.assets) {
 				
 				var name = asset.name;
-				var type = Manifest.inferType(name);
+				var type = inferType(name);
 				if (type == Image || type == Audio) {
 					// If this an asset that not all platforms may support, trim the extension from
 					// the name. We'll only load one of the assets if this creates a name collision.
