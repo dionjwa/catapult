@@ -3,6 +3,7 @@ package flambe.asset;
 import catapult.Catapult;
 
 import flambe.asset.AssetEntry;
+import flambe.asset.Manifest;
 
 import haxe.Http;
 import haxe.Json;
@@ -66,29 +67,31 @@ class CatapultTools
 			
 			if (message.type == Catapult.FILE_CHANGED_MESSAGE_NAME) 
 			{
-				var assetType = inferType(message.name);
-				if (assetType == Image || assetType == Audio) 
+				var assetFormat = Manifest.inferFormat(message.name);
+				
+				switch (assetFormat) 
 				{
-					if (message.manifest == manifest.name)
-					{
-						var assetEntry = new AssetEntry(
-							message.name.removeFileExtension(), 
-							baseHttpAddress + message.manifest + "/" + message.name + "?md5=" + message.md5, 
-							inferType(message.name), 
-							message.bytes);
-						Console.info({log:"Reloading", assetEntry:assetEntry});
-						loadEntry(assetEntry.url, assetEntry);
-					}
-					else
-					{
-						Console.info({log:"Asset not for this manifest", message:message, manifestId:manifest.name});
-					}
-					
-				} 
-				else if (message.name.endsWith("js"))
-				{
-					Console.info({log:"Reloading2 because change in javascript detected", message:message});
-					Browser.location.reload();
+					case Data:
+						if (message.name.endsWith("js"))
+						{
+							Console.info({log:"Reloading2 because change in javascript detected", message:message});
+							Browser.location.reload();
+						}
+					default://Assumes an image, texture, or audio
+						if (message.manifest == manifest.name)
+						{
+							var assetEntry = new AssetEntry(
+								message.name.removeFileExtension(), 
+								baseHttpAddress + message.manifest + "/" + message.name + "?md5=" + message.md5, 
+								Manifest.inferFormat(message.name), 
+								message.bytes);
+							Console.info({log:"Reloading", assetEntry:assetEntry});
+							loadEntry(assetEntry.url, assetEntry);
+						}
+						else
+						{
+							Console.info({log:"Asset not for this manifest", message:message, manifestId:manifest.name});
+						}
 				}
 			}
 		});
@@ -227,8 +230,9 @@ class CatapultTools
 			for (asset in manifestData.assets) {
 				
 				var name = asset.name;
-				var type = inferType(name);
-				if (type == Image || type == Audio) {
+				var type = Manifest.inferFormat(name);
+				
+				if (type == GIF || type == JPG || type == JXR || type == PNG || type == GIF || type == WEBP || type == M4A || type == MP3 || type == OGG  || type == WAV) {
 					// If this an asset that not all platforms may support, trim the extension from
 					// the name. We'll only load one of the assets if this creates a name collision.
 					name = name.removeFileExtension();
@@ -247,15 +251,15 @@ class CatapultTools
 		http.request(false);
 	}
 	
-	private static function inferType (url :String) :AssetType
-	{
-		var extension = url.split("?")[0].getFileExtension();
-		if (extension != null) {
-			switch (extension.toLowerCase()) {
-				case "png", "jpg", "gif": return Image;
-				case "ogg", "m4a", "mp3", "wav": return Audio;
-			}
-		}
-		return Data;
-	}
+	// private static function inferType (url :String) :AssetType
+	// {
+	// 	var extension = url.split("?")[0].getFileExtension();
+	// 	if (extension != null) {
+	// 		switch (extension.toLowerCase()) {
+	// 			case "png", "jpg", "gif": return Image;
+	// 			case "ogg", "m4a", "mp3", "wav": return Audio;
+	// 		}
+	// 	}
+	// 	return Data;
+	// }
 }

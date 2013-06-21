@@ -46,6 +46,7 @@ class Server
 	var _defaultStaticServer :StaticServer;
 	var _port :Int;
 	var _config :Config;
+	var _configPath :String;
 	var _httpServer :NodeHttpServer;
 	
 	static var RETRY_INTERVAL_MS :Int = 50;
@@ -99,20 +100,20 @@ class Server
 	
 	function loadConfig() :Void
 	{
-		if (FileSystem.exists(".catapult"))
+		if (FileSystem.exists(_configPath))
 		{
-			var content = File.getContent(".catapult");
+			var content = File.getContent(_configPath);
 			try {
 				_config = Json.parse(content);
 				// Console.info({log:"Config loaded", config:_config});
 			} catch (e :Dynamic) {
-				Console.error({log:"Could not parse json config", err:e, content:content});
+				Console.error({log:"Could not parse json config file=" + _configPath, err:e, content:content});
 				Node.process.exit(1);
 			}
 		} 
 		else
 		{
-			Console.warn("No .catapult config file detected.");
+			Console.warn("No catapult config file detected at " + _configPath);
 			Console.warn("Please run node catapult.js init");
 			Node.process.exit(1);
 		}
@@ -170,18 +171,20 @@ class Server
 		var program :Dynamic= Node.require('commander');
 		program
 			.version('Blink Asset Server 0.1.  Serving up flaming hot assets since 1903.\n Run in the root of your game project.')
+			.option('-c, --config <config>', 'Use a non-default config file (defaults to ".catapult") ', untyped String, ".catapult")
 			.parse(Node.process.argv);
 
 		program
 			.command('init')
 			.description('Creates a blank .catapult config file')
 			.action(function(env) {
-			createBlankCatapultFile();
+				createBlankCatapultFile();
 				Console.info('Created config file .catapult');
 			});
-			
+		_configPath = program.config;
+		Console.info("Config path=" + _configPath);
 		loadConfig();
-		watchFile({md5:"", bytes:0, relativePath:".catapult", absolutePath:".catapult", manifestKey:""});
+		watchFile({md5:"", bytes:0, relativePath:_configPath, absolutePath:_configPath, manifestKey:""});
 	}
 	
 	function onHttpRequest (req :NodeHttpServerReq, res :NodeHttpServerResp) :Void

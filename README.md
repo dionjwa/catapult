@@ -54,9 +54,7 @@ Clone this repo and add required dependencies:
 	
 And run with: 
 
-	node catapult.js
-	
-Or go to the demo folder and run the same command.
+	node catapult.js --config=demo/.catapult_js
 	
 ### Using the server
 
@@ -68,8 +66,21 @@ Then open the "test.ods" file in LibreOffice.  You can edit the x, y, and scale 
 
 Open up an image editor, and change the flameling.png.  Saves changes will be automatically loaded.
 
-
 See demo/web/client.js for an example HTML5 implementation of a catapult client.
+
+### Flambe demo
+
+You'll need the forked version of flambe to work
+
+Build the client with 
+
+	haxe demo/client.hxml
+	
+Then run the server with
+	
+	node catapult.js --config demo/.catapult_flambe
+	
+	
 See demo/src/demo/FlambeClient.hx for an example Flambe implementation of a catapult client.
 
 ![screenshot](demo/catapult_demo.png)

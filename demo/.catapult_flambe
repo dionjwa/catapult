@@ -1,13 +1,14 @@
 {
 	"port":8000,
 	"address":"0.0.0.0",
-	"file_server_path":"demo/web",
+	"file_server_path":"demo/deploy_flambe/web",
 	"manifests" : [
 		{"id" : "bootstrap", "path" : "demo/assets/bootstrap"}
 	],
 	"paths_to_watch_for_file_changes" : [
 		"src",
-		"deploy/web"
+		"demo/src",
+		"demo/deploy_flambe/web"
 	],
 	"commands" : [
 		{

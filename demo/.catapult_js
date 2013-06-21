@@ -1,9 +1,9 @@
 {
 	"port":8000,
 	"address":"0.0.0.0",
-	"file_server_path":"web",
+	"file_server_path":"demo/deploy_js",
 	"manifests" : [
-		{"id" : "bootstrap", "path" : "assets/bootstrap"}
+		{"id" : "bootstrap", "path" : "demo/assets/bootstrap"}
 	],
 	"paths_to_watch_for_file_changes" : [],
 	"commands" : []
