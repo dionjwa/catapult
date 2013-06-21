@@ -10,8 +10,8 @@
 -D mconsole
 
 -lib format
--lib flambe
 
+-cp lib/flambe/src
 -cp lib/hxods
 -cp src
 -cp demo/src

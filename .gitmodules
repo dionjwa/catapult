@@ -4,3 +4,7 @@
 [submodule "lib/mconsole"]
 	path = lib/mconsole
 	url = git://github.com/dionjwa/mconsole.git
+[submodule "lib/flambe"]
+	path = lib/flambe
+	url = git@github.com:dionjwa/flambe.git
+	branch = catapult
