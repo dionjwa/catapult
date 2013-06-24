@@ -47,8 +47,6 @@ Clone this repo and add required dependencies:
 	npm install commander
 	npm install node-static
 	npm install source-map-support
-	haxelib install nodejs_std
-	haxelib install nodejs_externs
 	haxelib install format
 	haxe build.hxml
 	
@@ -70,11 +68,9 @@ See demo/web/client.js for an example HTML5 implementation of a catapult client.
 
 ### Flambe demo
 
-You'll need the forked version of flambe to work (it's there as a submodule), and you'll need these haxelibs:
+You'll need the forked version of flambe to work (it's there as a submodule), and you'll need these haxelib(s):
 
 	haxelib install format
-	haxelib install nodejs_std
-	haxelib install nodejs_externs
 
 Build the client with 
 

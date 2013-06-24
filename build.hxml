@@ -1,19 +1,20 @@
  #Server
+
+ #Since nodejs is from a git submodule instead of a haxelib for now
+ --macro allowPackage("sys")
+
 -debug
 -D nodejs
-
-#mconsole
--cp lib/mconsole/src
 -D mconsole
 
--lib nodejs_std
--lib nodejs_externs
 -lib format #Needed for the ods parser
 
+-cp lib/mconsole/src
+-cp lib/nodejs_std/src
 -cp lib/hxods
+
 -cp src
 
 -main catapult.Server
 
 -js catapult.js
---remap sys:sys

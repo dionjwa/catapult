@@ -118,7 +118,7 @@ List.prototype = {
 		return x;
 	}
 	,first: function() {
-		return this.h == null?null:this.h[0];
+		if(this.h == null) return null; else return this.h[0];
 	}
 	,push: function(item) {
 		var x = [item,this.h];
@@ -193,7 +193,7 @@ var StringTools = function() { }
 StringTools.__name__ = ["StringTools"];
 StringTools.htmlEscape = function(s,quotes) {
 	s = s.split("&").join("&amp;").split("<").join("&lt;").split(">").join("&gt;");
-	return quotes?s.split("\"").join("&quot;").split("'").join("&#039;"):s;
+	if(quotes) return s.split("\"").join("&quot;").split("'").join("&#039;"); else return s;
 }
 StringTools.htmlUnescape = function(s) {
 	return s.split("&gt;").join(">").split("&lt;").join("<").split("&quot;").join("\"").split("&#039;").join("'").split("&amp;").join("&");
@@ -527,7 +527,8 @@ catapult.OdsRuntimeParser.parse = function(filePath) {
 	var sheets = new haxe.ds.StringMap();
 	var ods1 = new ods.OdsChecker();
 	ods1.loadODS(new haxe.io.StringInput(sys.io.File.getContent(filePath)));
-	var _g = 0, _g1 = ods1.getSheets();
+	var _g = 0;
+	var _g1 = ods1.getSheets();
 	while(_g < _g1.length) {
 		var sheetkey = _g1[_g];
 		++_g;
@@ -543,7 +544,8 @@ catapult.OdsRuntimeParser.parse = function(filePath) {
 				itemIndex++;
 				var obj = { };
 				objects.push(obj);
-				var _g3 = 0, _g2 = line.length;
+				var _g3 = 0;
+				var _g2 = line.length;
 				while(_g3 < _g2) {
 					var i = _g3++;
 					if(i == 0) {
@@ -552,7 +554,7 @@ catapult.OdsRuntimeParser.parse = function(filePath) {
 					}
 					if(types[i] == null || types[i] == catapult.OdsType.OdsNull || types[i] == catapult.OdsType.OdsInt) types[i] = catapult.OdsRuntimeParser.getType(line[i]);
 					var _g4 = types[i];
-					switch( (_g4)[1] ) {
+					switch(_g4[1]) {
 					case 0:
 						obj[keys[i]] = line[i] == "true";
 						break;
@@ -639,7 +641,8 @@ catapult.Server.prototype = {
 		this._manifests.set(baseName,v);
 		v;
 		var numFilesWatched = 0;
-		var _g = 0, _g1 = sys.FileSystem.readRecursive(rootPath,catapult.Server.fileFilter);
+		var _g = 0;
+		var _g1 = sys.FileSystem.readRecursive(rootPath,catapult.Server.fileFilter);
 		while(_g < _g1.length) {
 			var relativeFilePath = _g1[_g];
 			++_g;
@@ -666,7 +669,8 @@ catapult.Server.prototype = {
 		if(this._manifests.exists(file.manifestKey)) this._manifests.get(file.manifestKey).md5 = null;
 		var message = { type : "file_changed", name : file.relativePath, md5 : file.md5, manifest : file.manifestKey, bytes : file.bytes};
 		var messageString = js.Node.stringify(message,null,"\t");
-		var _g1 = 0, _g11 = this._websocketServer.connections;
+		var _g1 = 0;
+		var _g11 = this._websocketServer.connections;
 		while(_g1 < _g11.length) {
 			var connection = _g11[_g1];
 			++_g1;
@@ -681,7 +685,8 @@ catapult.Server.prototype = {
 				dataMessage.type = "file_changed_ods";
 				dataMessage.data = data;
 				var dataMessageString = js.Node.stringify(dataMessage,null,"\t");
-				var _g1 = 0, _g2 = _g._websocketServer.connections;
+				var _g1 = 0;
+				var _g2 = _g._websocketServer.connections;
 				while(_g1 < _g2.length) {
 					var connection = _g2[_g1];
 					++_g1;
@@ -691,7 +696,8 @@ catapult.Server.prototype = {
 			if(js.Node.fs.statSync(file.absolutePath).size == 0) js.Node.setTimeout(update,100); else update();
 		}
 		if(this._config.commands != null) {
-			var _g1 = 0, _g11 = this._config.commands;
+			var _g1 = 0;
+			var _g11 = this._config.commands;
 			while(_g1 < _g11.length) {
 				var commandData = _g11[_g1];
 				++_g1;
@@ -770,7 +776,8 @@ catapult.Server.prototype = {
 			return null;
 		}
 		var files = new Array();
-		var _g = 0, _g1 = this._manifests.get(manifestKey).assets;
+		var _g = 0;
+		var _g1 = this._manifests.get(manifestKey).assets;
 		while(_g < _g1.length) {
 			var f = _g1[_g];
 			++_g;
@@ -778,7 +785,8 @@ catapult.Server.prototype = {
 		}
 		if(this._manifests.get(manifestKey).md5 == null) {
 			var s = new StringBuf();
-			var _g = 0, _g1 = this._manifests.get(manifestKey).assets;
+			var _g = 0;
+			var _g1 = this._manifests.get(manifestKey).assets;
 			while(_g < _g1.length) {
 				var f = _g1[_g];
 				++_g;
@@ -800,7 +808,8 @@ catapult.Server.prototype = {
 					return _e.keys();
 				};
 			})(this._manifests)});
-			var _g1 = 0, _g = manifestKeys.length;
+			var _g1 = 0;
+			var _g = manifestKeys.length;
 			while(_g1 < _g) {
 				var i = _g1++;
 				manifestKeys[i] = "http://<host>:" + this._config.port + "/" + manifestKeys[i] + "/manifest.json";
@@ -855,7 +864,8 @@ catapult.Server.prototype = {
 						return _e.keys();
 					};
 				})(_g._manifests)});
-				var _g2 = 0, _g1 = manifestKeys.length;
+				var _g2 = 0;
+				var _g1 = manifestKeys.length;
 				while(_g2 < _g1) {
 					var i = _g2++;
 					manifestKeys[i] = "http://<host>:" + _g._config.port + "/" + manifestKeys[i] + "/manifest.json";
@@ -911,7 +921,8 @@ catapult.Server.prototype = {
 			js.Node.process.exit(1);
 		}
 		this._servedFolders = new haxe.ds.StringMap();
-		var manifests = Reflect.hasField(this._config,"manifests")?this._config.manifests:[];
+		var manifests;
+		if(Reflect.hasField(this._config,"manifests")) manifests = this._config.manifests; else manifests = [];
 		if(manifests != null) {
 			var _g1 = 0;
 			while(_g1 < manifests.length) {
@@ -924,7 +935,8 @@ catapult.Server.prototype = {
 			}
 		}
 		if(Reflect.hasField(this._config,"paths_to_watch_for_file_changes")) {
-			var _g1 = 0, _g11 = this._config.paths_to_watch_for_file_changes;
+			var _g1 = 0;
+			var _g11 = this._config.paths_to_watch_for_file_changes;
 			while(_g1 < _g11.length) {
 				var path = _g11[_g1];
 				++_g1;
@@ -976,8 +988,10 @@ format.tools.Adler32.prototype = {
 		return a.a1 == this.a1 && a.a2 == this.a2;
 	}
 	,update: function(b,pos,len) {
-		var a1 = this.a1, a2 = this.a2;
-		var _g1 = pos, _g = pos + len;
+		var a1 = this.a1;
+		var a2 = this.a2;
+		var _g1 = pos;
+		var _g = pos + len;
 		while(_g1 < _g) {
 			var p = _g1++;
 			var c = b.b[p];
@@ -1015,7 +1029,8 @@ format.tools.HuffTools.prototype = {
 			counts[p]++;
 		}
 		var code = 0;
-		var _g1 = 1, _g = maxbits - 1;
+		var _g1 = 1;
+		var _g = maxbits - 1;
 		while(_g1 < _g) {
 			var i = _g1++;
 			code = code + counts[i] << 1;
@@ -1043,10 +1058,10 @@ format.tools.HuffTools.prototype = {
 		return format.tools.Huffman.NeedBit(this.treeMake(bits,maxbits,v,len),this.treeMake(bits,maxbits,v | 1,len));
 	}
 	,treeWalk: function(table,p,cd,d,t) {
-		var $e = (t);
-		switch( $e[1] ) {
+		switch(t[1]) {
 		case 1:
-			var b = $e[3], a = $e[2];
+			var b = t[3];
+			var a = t[2];
 			if(d > 0) {
 				this.treeWalk(table,p,cd + 1,d - 1,a);
 				this.treeWalk(table,p | 1 << cd,cd + 1,d - 1,b);
@@ -1059,23 +1074,14 @@ format.tools.HuffTools.prototype = {
 	,treeCompress: function(t) {
 		var d = this.treeDepth(t);
 		if(d == 0) return t;
-		if(d == 1) return (function($this) {
-			var $r;
-			var $e = (t);
-			switch( $e[1] ) {
-			case 1:
-				var b = $e[3], a = $e[2];
-				$r = format.tools.Huffman.NeedBit($this.treeCompress(a),$this.treeCompress(b));
-				break;
-			default:
-				$r = (function($this) {
-					var $r;
-					throw "assert";
-					return $r;
-				}($this));
-			}
-			return $r;
-		}(this));
+		if(d == 1) switch(t[1]) {
+		case 1:
+			var b = t[3];
+			var a = t[2];
+			return format.tools.Huffman.NeedBit(this.treeCompress(a),this.treeCompress(b));
+		default:
+			throw "assert";
+		}
 		var size = 1 << d;
 		var table = new Array();
 		var _g = 0;
@@ -1087,33 +1093,19 @@ format.tools.HuffTools.prototype = {
 		return format.tools.Huffman.NeedBits(d,table);
 	}
 	,treeDepth: function(t) {
-		return (function($this) {
-			var $r;
-			var $e = (t);
-			switch( $e[1] ) {
-			case 0:
-				$r = 0;
-				break;
-			case 2:
-				$r = (function($this) {
-					var $r;
-					throw "assert";
-					return $r;
-				}($this));
-				break;
-			case 1:
-				var b = $e[3], a = $e[2];
-				$r = (function($this) {
-					var $r;
-					var da = $this.treeDepth(a);
-					var db = $this.treeDepth(b);
-					$r = 1 + (da < db?da:db);
-					return $r;
-				}($this));
-				break;
-			}
-			return $r;
-		}(this));
+		switch(t[1]) {
+		case 0:
+			return 0;
+		case 2:
+			throw "assert";
+			break;
+		case 1:
+			var b = t[3];
+			var a = t[2];
+			var da = this.treeDepth(a);
+			var db = this.treeDepth(b);
+			return 1 + (da < db?da:db);
+		}
 	}
 	,__class__: format.tools.HuffTools
 }
@@ -1193,7 +1185,7 @@ format.tools.InflateImpl = function(i,header,crc) {
 	this.huffdist = null;
 	this.len = 0;
 	this.dist = 0;
-	this.state = header?format.tools._InflateImpl.State.Head:format.tools._InflateImpl.State.Block;
+	if(header) this.state = format.tools._InflateImpl.State.Head; else this.state = format.tools._InflateImpl.State.Block;
 	this.input = i;
 	this.bits = 0;
 	this.nbits = 0;
@@ -1224,7 +1216,7 @@ format.tools.InflateImpl.run = function(i,bufsize) {
 format.tools.InflateImpl.prototype = {
 	inflateLoop: function() {
 		var _g = this;
-		switch( (_g.state)[1] ) {
+		switch(_g.state[1]) {
 		case 0:
 			var cmf = this.input.readByte();
 			var cm = cmf & 15;
@@ -1281,7 +1273,8 @@ format.tools.InflateImpl.prototype = {
 				}
 				this.huffman = this.htools.make(this.lengths,0,19,8);
 				var lengths = new Array();
-				var _g3 = 0, _g2 = hlit + hdist;
+				var _g3 = 0;
+				var _g2 = hlit + hdist;
 				while(_g3 < _g2) {
 					var i = _g3++;
 					lengths.push(0);
@@ -1296,22 +1289,28 @@ format.tools.InflateImpl.prototype = {
 			}
 			break;
 		case 3:
-			var rlen = this.len < this.needed?this.len:this.needed;
+			var rlen;
+			if(this.len < this.needed) rlen = this.len; else rlen = this.needed;
 			var bytes = this.input.read(rlen);
 			this.len -= rlen;
 			this.addBytes(bytes,0,rlen);
-			if(this.len == 0) this.state = this["final"]?format.tools._InflateImpl.State.Crc:format.tools._InflateImpl.State.Block;
+			if(this.len == 0) {
+				if(this["final"]) this.state = format.tools._InflateImpl.State.Crc; else this.state = format.tools._InflateImpl.State.Block;
+			}
 			return this.needed > 0;
 		case 6:
-			var rlen = this.len < this.needed?this.len:this.needed;
+			var rlen;
+			if(this.len < this.needed) rlen = this.len; else rlen = this.needed;
 			this.addDistOne(rlen);
 			this.len -= rlen;
 			if(this.len == 0) this.state = format.tools._InflateImpl.State.CData;
 			return this.needed > 0;
 		case 5:
 			while(this.len > 0 && this.needed > 0) {
-				var rdist = this.len < this.dist?this.len:this.dist;
-				var rlen = this.needed < rdist?this.needed:rdist;
+				var rdist;
+				if(this.len < this.dist) rdist = this.len; else rdist = this.dist;
+				var rlen;
+				if(this.needed < rdist) rlen = this.needed; else rlen = rdist;
 				this.addDist(this.dist,rlen);
 				this.len -= rlen;
 			}
@@ -1323,19 +1322,20 @@ format.tools.InflateImpl.prototype = {
 				this.addByte(n);
 				return this.needed > 0;
 			} else if(n == 256) {
-				this.state = this["final"]?format.tools._InflateImpl.State.Crc:format.tools._InflateImpl.State.Block;
+				if(this["final"]) this.state = format.tools._InflateImpl.State.Crc; else this.state = format.tools._InflateImpl.State.Block;
 				return true;
 			} else {
 				n -= 257;
 				var extra_bits = format.tools.InflateImpl.LEN_EXTRA_BITS_TBL[n];
 				if(extra_bits == -1) throw "Invalid data";
 				this.len = format.tools.InflateImpl.LEN_BASE_VAL_TBL[n] + this.getBits(extra_bits);
-				var dist_code = this.huffdist == null?this.getRevBits(5):this.applyHuffman(this.huffdist);
+				var dist_code;
+				if(this.huffdist == null) dist_code = this.getRevBits(5); else dist_code = this.applyHuffman(this.huffdist);
 				extra_bits = format.tools.InflateImpl.DIST_EXTRA_BITS_TBL[dist_code];
 				if(extra_bits == -1) throw "Invalid data";
 				this.dist = format.tools.InflateImpl.DIST_BASE_VAL_TBL[dist_code] + this.getBits(extra_bits);
 				if(this.dist > this.window.available()) throw "Invalid data";
-				this.state = this.dist == 1?format.tools._InflateImpl.State.DistOne:format.tools._InflateImpl.State.Dist;
+				if(this.dist == 1) this.state = format.tools._InflateImpl.State.DistOne; else this.state = format.tools._InflateImpl.State.Dist;
 				return true;
 			}
 			break;
@@ -1374,25 +1374,19 @@ format.tools.InflateImpl.prototype = {
 		}
 	}
 	,applyHuffman: function(h) {
-		return (function($this) {
-			var $r;
-			var $e = (h);
-			switch( $e[1] ) {
-			case 0:
-				var n = $e[2];
-				$r = n;
-				break;
-			case 1:
-				var b = $e[3], a = $e[2];
-				$r = $this.applyHuffman($this.getBit()?b:a);
-				break;
-			case 2:
-				var tbl = $e[3], n = $e[2];
-				$r = $this.applyHuffman(tbl[$this.getBits(n)]);
-				break;
-			}
-			return $r;
-		}(this));
+		switch(h[1]) {
+		case 0:
+			var n = h[2];
+			return n;
+		case 1:
+			var b = h[3];
+			var a = h[2];
+			return this.applyHuffman(this.getBit()?b:a);
+		case 2:
+			var tbl = h[3];
+			var n = h[2];
+			return this.applyHuffman(tbl[this.getBits(n)]);
+		}
 	}
 	,addDist: function(d,len) {
 		this.addBytes(this.window.buffer,this.window.pos - d,len);
@@ -1422,7 +1416,7 @@ format.tools.InflateImpl.prototype = {
 		this.nbits = 0;
 	}
 	,getRevBits: function(n) {
-		return n == 0?0:this.getBit()?1 << n - 1 | this.getRevBits(n - 1):this.getRevBits(n - 1);
+		if(n == 0) return 0; else if(this.getBit()) return 1 << n - 1 | this.getRevBits(n - 1); else return this.getRevBits(n - 1);
 	}
 	,getBit: function() {
 		if(this.nbits == 0) {
@@ -1530,7 +1524,8 @@ haxe.Log.trace = function(v,infos) {
 	js.Boot.__trace(v,infos);
 }
 haxe.Timer = function(time_ms) {
-	var me = this, fn = function() {
+	var me = this;
+	var fn = function() {
 		Reflect.field(me,"run").apply(me,[]);
 	};
 	this.id = haxe.Timer.arr.length;
@@ -1586,8 +1581,10 @@ haxe.crypto.Adler32.prototype = {
 		return a.a1 == this.a1 && a.a2 == this.a2;
 	}
 	,update: function(b,pos,len) {
-		var a1 = this.a1, a2 = this.a2;
-		var _g1 = pos, _g = pos + len;
+		var a1 = this.a1;
+		var a2 = this.a2;
+		var _g1 = pos;
+		var _g = pos + len;
 		while(_g1 < _g) {
 			var p = _g1++;
 			var c = b.b[p];
@@ -1703,7 +1700,8 @@ haxe.io.Bytes.prototype = {
 	,compare: function(other) {
 		var b1 = this.b;
 		var b2 = other.b;
-		var len = this.length < other.length?this.length:other.length;
+		var len;
+		if(this.length < other.length) len = this.length; else len = other.length;
 		var _g = 0;
 		while(_g < len) {
 			var i = _g++;
@@ -1713,7 +1711,8 @@ haxe.io.Bytes.prototype = {
 	}
 	,sub: function(pos,len) {
 		if(pos < 0 || len < 0 || pos + len > this.length) throw haxe.io.Error.OutsideBounds;
-		var nb = new Buffer(len), slice = this.b.slice(pos,pos + len);
+		var nb = new Buffer(len);
+		var slice = this.b.slice(pos,pos + len);
 		slice.copy(nb,0,0,len);
 		return new haxe.io.Bytes(len,nb);
 	}
@@ -1744,7 +1743,8 @@ haxe.io.BytesBuffer.prototype = {
 		if(pos < 0 || len < 0 || pos + len > src.length) throw haxe.io.Error.OutsideBounds;
 		var b1 = this.b;
 		var b2 = src.b;
-		var _g1 = pos, _g = pos + len;
+		var _g1 = pos;
+		var _g = pos + len;
 		while(_g1 < _g) {
 			var i = _g1++;
 			this.b.push(b2[i]);
@@ -1753,7 +1753,8 @@ haxe.io.BytesBuffer.prototype = {
 	,add: function(src) {
 		var b1 = this.b;
 		var b2 = src.b;
-		var _g1 = 0, _g = src.length;
+		var _g1 = 0;
+		var _g = src.length;
 		while(_g1 < _g) {
 			var i = _g1++;
 			this.b.push(b2[i]);
@@ -1777,17 +1778,18 @@ haxe.io.Input.prototype = {
 		var ch2 = this.readByte();
 		var ch3 = this.readByte();
 		var ch4 = this.readByte();
-		return this.bigEndian?ch4 | ch3 << 8 | ch2 << 16 | ch1 << 24:ch1 | ch2 << 8 | ch3 << 16 | ch4 << 24;
+		if(this.bigEndian) return ch4 | ch3 << 8 | ch2 << 16 | ch1 << 24; else return ch1 | ch2 << 8 | ch3 << 16 | ch4 << 24;
 	}
 	,readUInt16: function() {
 		var ch1 = this.readByte();
 		var ch2 = this.readByte();
-		return this.bigEndian?ch2 | ch1 << 8:ch1 | ch2 << 8;
+		if(this.bigEndian) return ch2 | ch1 << 8; else return ch1 | ch2 << 8;
 	}
 	,readInt16: function() {
 		var ch1 = this.readByte();
 		var ch2 = this.readByte();
-		var n = this.bigEndian?ch2 | ch1 << 8:ch1 | ch2 << 8;
+		var n;
+		if(this.bigEndian) n = ch2 | ch1 << 8; else n = ch1 | ch2 << 8;
 		if((n & 32768) != 0) return n - 65536;
 		return n;
 	}
@@ -1821,11 +1823,7 @@ haxe.io.Input.prototype = {
 		return len;
 	}
 	,readByte: function() {
-		return (function($this) {
-			var $r;
-			throw "Not implemented";
-			return $r;
-		}(this));
+		throw "Not implemented";
 	}
 	,__class__: haxe.io.Input
 }
@@ -1836,6 +1834,7 @@ haxe.io.BytesInput = function(b,pos,len) {
 	this.b = b.b;
 	this.pos = pos;
 	this.len = len;
+	this.totlen = len;
 };
 haxe.io.BytesInput.__name__ = ["haxe","io","BytesInput"];
 haxe.io.BytesInput.__super__ = haxe.io.Input;
@@ -1902,7 +1901,8 @@ haxe.xml._Fast.NodeAccess.prototype = {
 	resolve: function(name) {
 		var x = this.__x.elementsNamed(name).next();
 		if(x == null) {
-			var xname = this.__x.nodeType == Xml.Document?"Document":this.__x.get_nodeName();
+			var xname;
+			if(this.__x.nodeType == Xml.Document) xname = "Document"; else xname = this.__x.get_nodeName();
 			throw xname + " is missing element " + name;
 		}
 		return new haxe.xml.Fast(x);
@@ -2190,7 +2190,8 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 			if(c == 59) {
 				var s = HxOverrides.substr(str,start,p - start);
 				if(s.charCodeAt(0) == 35) {
-					var i = s.charCodeAt(1) == 120?Std.parseInt("0" + HxOverrides.substr(s,1,s.length - 1)):Std.parseInt(HxOverrides.substr(s,1,s.length - 1));
+					var i;
+					if(s.charCodeAt(1) == 120) i = Std.parseInt("0" + HxOverrides.substr(s,1,s.length - 1)); else i = Std.parseInt(HxOverrides.substr(s,1,s.length - 1));
 					buf.b += Std.string(String.fromCharCode(i));
 				} else if(!haxe.xml.Parser.escapes.exists(s)) buf.b += Std.string("&" + s + ";"); else buf.b += Std.string(haxe.xml.Parser.escapes.get(s));
 				start = p + 1;
@@ -2243,7 +2244,8 @@ haxe.zip.HuffTools.prototype = {
 			counts[p]++;
 		}
 		var code = 0;
-		var _g1 = 1, _g = maxbits - 1;
+		var _g1 = 1;
+		var _g = maxbits - 1;
 		while(_g1 < _g) {
 			var i = _g1++;
 			code = code + counts[i] << 1;
@@ -2271,10 +2273,10 @@ haxe.zip.HuffTools.prototype = {
 		return haxe.zip.Huffman.NeedBit(this.treeMake(bits,maxbits,v,len),this.treeMake(bits,maxbits,v | 1,len));
 	}
 	,treeWalk: function(table,p,cd,d,t) {
-		var $e = (t);
-		switch( $e[1] ) {
+		switch(t[1]) {
 		case 1:
-			var b = $e[3], a = $e[2];
+			var b = t[3];
+			var a = t[2];
 			if(d > 0) {
 				this.treeWalk(table,p,cd + 1,d - 1,a);
 				this.treeWalk(table,p | 1 << cd,cd + 1,d - 1,b);
@@ -2287,23 +2289,14 @@ haxe.zip.HuffTools.prototype = {
 	,treeCompress: function(t) {
 		var d = this.treeDepth(t);
 		if(d == 0) return t;
-		if(d == 1) return (function($this) {
-			var $r;
-			var $e = (t);
-			switch( $e[1] ) {
-			case 1:
-				var b = $e[3], a = $e[2];
-				$r = haxe.zip.Huffman.NeedBit($this.treeCompress(a),$this.treeCompress(b));
-				break;
-			default:
-				$r = (function($this) {
-					var $r;
-					throw "assert";
-					return $r;
-				}($this));
-			}
-			return $r;
-		}(this));
+		if(d == 1) switch(t[1]) {
+		case 1:
+			var b = t[3];
+			var a = t[2];
+			return haxe.zip.Huffman.NeedBit(this.treeCompress(a),this.treeCompress(b));
+		default:
+			throw "assert";
+		}
 		var size = 1 << d;
 		var table = new Array();
 		var _g = 0;
@@ -2315,33 +2308,19 @@ haxe.zip.HuffTools.prototype = {
 		return haxe.zip.Huffman.NeedBits(d,table);
 	}
 	,treeDepth: function(t) {
-		return (function($this) {
-			var $r;
-			var $e = (t);
-			switch( $e[1] ) {
-			case 0:
-				$r = 0;
-				break;
-			case 2:
-				$r = (function($this) {
-					var $r;
-					throw "assert";
-					return $r;
-				}($this));
-				break;
-			case 1:
-				var b = $e[3], a = $e[2];
-				$r = (function($this) {
-					var $r;
-					var da = $this.treeDepth(a);
-					var db = $this.treeDepth(b);
-					$r = 1 + (da < db?da:db);
-					return $r;
-				}($this));
-				break;
-			}
-			return $r;
-		}(this));
+		switch(t[1]) {
+		case 0:
+			return 0;
+		case 2:
+			throw "assert";
+			break;
+		case 1:
+			var b = t[3];
+			var a = t[2];
+			var da = this.treeDepth(a);
+			var db = this.treeDepth(b);
+			return 1 + (da < db?da:db);
+		}
 	}
 	,__class__: haxe.zip.HuffTools
 }
@@ -2416,7 +2395,7 @@ haxe.zip.InflateImpl = function(i,header,crc) {
 	this.huffdist = null;
 	this.len = 0;
 	this.dist = 0;
-	this.state = header?haxe.zip._InflateImpl.State.Head:haxe.zip._InflateImpl.State.Block;
+	if(header) this.state = haxe.zip._InflateImpl.State.Head; else this.state = haxe.zip._InflateImpl.State.Block;
 	this.input = i;
 	this.bits = 0;
 	this.nbits = 0;
@@ -2435,7 +2414,7 @@ haxe.zip.InflateImpl.__name__ = ["haxe","zip","InflateImpl"];
 haxe.zip.InflateImpl.prototype = {
 	inflateLoop: function() {
 		var _g = this;
-		switch( (_g.state)[1] ) {
+		switch(_g.state[1]) {
 		case 0:
 			var cmf = this.input.readByte();
 			var cm = cmf & 15;
@@ -2492,7 +2471,8 @@ haxe.zip.InflateImpl.prototype = {
 				}
 				this.huffman = this.htools.make(this.lengths,0,19,8);
 				var lengths = new Array();
-				var _g3 = 0, _g2 = hlit + hdist;
+				var _g3 = 0;
+				var _g2 = hlit + hdist;
 				while(_g3 < _g2) {
 					var i = _g3++;
 					lengths.push(0);
@@ -2507,22 +2487,28 @@ haxe.zip.InflateImpl.prototype = {
 			}
 			break;
 		case 3:
-			var rlen = this.len < this.needed?this.len:this.needed;
+			var rlen;
+			if(this.len < this.needed) rlen = this.len; else rlen = this.needed;
 			var bytes = this.input.read(rlen);
 			this.len -= rlen;
 			this.addBytes(bytes,0,rlen);
-			if(this.len == 0) this.state = this["final"]?haxe.zip._InflateImpl.State.Crc:haxe.zip._InflateImpl.State.Block;
+			if(this.len == 0) {
+				if(this["final"]) this.state = haxe.zip._InflateImpl.State.Crc; else this.state = haxe.zip._InflateImpl.State.Block;
+			}
 			return this.needed > 0;
 		case 6:
-			var rlen = this.len < this.needed?this.len:this.needed;
+			var rlen;
+			if(this.len < this.needed) rlen = this.len; else rlen = this.needed;
 			this.addDistOne(rlen);
 			this.len -= rlen;
 			if(this.len == 0) this.state = haxe.zip._InflateImpl.State.CData;
 			return this.needed > 0;
 		case 5:
 			while(this.len > 0 && this.needed > 0) {
-				var rdist = this.len < this.dist?this.len:this.dist;
-				var rlen = this.needed < rdist?this.needed:rdist;
+				var rdist;
+				if(this.len < this.dist) rdist = this.len; else rdist = this.dist;
+				var rlen;
+				if(this.needed < rdist) rlen = this.needed; else rlen = rdist;
 				this.addDist(this.dist,rlen);
 				this.len -= rlen;
 			}
@@ -2534,19 +2520,20 @@ haxe.zip.InflateImpl.prototype = {
 				this.addByte(n);
 				return this.needed > 0;
 			} else if(n == 256) {
-				this.state = this["final"]?haxe.zip._InflateImpl.State.Crc:haxe.zip._InflateImpl.State.Block;
+				if(this["final"]) this.state = haxe.zip._InflateImpl.State.Crc; else this.state = haxe.zip._InflateImpl.State.Block;
 				return true;
 			} else {
 				n -= 257;
 				var extra_bits = haxe.zip.InflateImpl.LEN_EXTRA_BITS_TBL[n];
 				if(extra_bits == -1) throw "Invalid data";
 				this.len = haxe.zip.InflateImpl.LEN_BASE_VAL_TBL[n] + this.getBits(extra_bits);
-				var dist_code = this.huffdist == null?this.getRevBits(5):this.applyHuffman(this.huffdist);
+				var dist_code;
+				if(this.huffdist == null) dist_code = this.getRevBits(5); else dist_code = this.applyHuffman(this.huffdist);
 				extra_bits = haxe.zip.InflateImpl.DIST_EXTRA_BITS_TBL[dist_code];
 				if(extra_bits == -1) throw "Invalid data";
 				this.dist = haxe.zip.InflateImpl.DIST_BASE_VAL_TBL[dist_code] + this.getBits(extra_bits);
 				if(this.dist > this.window.available()) throw "Invalid data";
-				this.state = this.dist == 1?haxe.zip._InflateImpl.State.DistOne:haxe.zip._InflateImpl.State.Dist;
+				if(this.dist == 1) this.state = haxe.zip._InflateImpl.State.DistOne; else this.state = haxe.zip._InflateImpl.State.Dist;
 				return true;
 			}
 			break;
@@ -2585,25 +2572,19 @@ haxe.zip.InflateImpl.prototype = {
 		}
 	}
 	,applyHuffman: function(h) {
-		return (function($this) {
-			var $r;
-			var $e = (h);
-			switch( $e[1] ) {
-			case 0:
-				var n = $e[2];
-				$r = n;
-				break;
-			case 1:
-				var b = $e[3], a = $e[2];
-				$r = $this.applyHuffman($this.getBit()?b:a);
-				break;
-			case 2:
-				var tbl = $e[3], n = $e[2];
-				$r = $this.applyHuffman(tbl[$this.getBits(n)]);
-				break;
-			}
-			return $r;
-		}(this));
+		switch(h[1]) {
+		case 0:
+			var n = h[2];
+			return n;
+		case 1:
+			var b = h[3];
+			var a = h[2];
+			return this.applyHuffman(this.getBit()?b:a);
+		case 2:
+			var tbl = h[3];
+			var n = h[2];
+			return this.applyHuffman(tbl[this.getBits(n)]);
+		}
 	}
 	,addDist: function(d,len) {
 		this.addBytes(this.window.buffer,this.window.pos - d,len);
@@ -2633,7 +2614,7 @@ haxe.zip.InflateImpl.prototype = {
 		this.nbits = 0;
 	}
 	,getRevBits: function(n) {
-		return n == 0?0:this.getBit()?1 << n - 1 | this.getRevBits(n - 1):this.getRevBits(n - 1);
+		if(n == 0) return 0; else if(this.getBit()) return 1 << n - 1 | this.getRevBits(n - 1); else return this.getRevBits(n - 1);
 	}
 	,getBit: function() {
 		if(this.nbits == 0) {
@@ -2783,10 +2764,12 @@ js.Boot.__unhtml = function(s) {
 	return s.split("&").join("&amp;").split("<").join("&lt;").split(">").join("&gt;");
 }
 js.Boot.__trace = function(v,i) {
-	var msg = i != null?i.fileName + ":" + i.lineNumber + ": ":"";
+	var msg;
+	if(i != null) msg = i.fileName + ":" + i.lineNumber + ": "; else msg = "";
 	msg += js.Boot.__string_rec(v,"");
 	if(i != null && i.customParams != null) {
-		var _g = 0, _g1 = i.customParams;
+		var _g = 0;
+		var _g1 = i.customParams;
 		while(_g < _g1.length) {
 			var v1 = _g1[_g];
 			++_g;
@@ -2808,7 +2791,8 @@ js.Boot.__string_rec = function(o,s) {
 				if(o.length == 2) return o[0];
 				var str = o[0] + "(";
 				s += "\t";
-				var _g1 = 2, _g = o.length;
+				var _g1 = 2;
+				var _g = o.length;
 				while(_g1 < _g) {
 					var i = _g1++;
 					if(i != 2) str += "," + js.Boot.__string_rec(o[i],s); else str += js.Boot.__string_rec(o[i],s);
@@ -2867,7 +2851,8 @@ js.Boot.__interfLoop = function(cc,cl) {
 	if(cc == cl) return true;
 	var intf = cc.__interfaces__;
 	if(intf != null) {
-		var _g1 = 0, _g = intf.length;
+		var _g1 = 0;
+		var _g = intf.length;
 		while(_g1 < _g) {
 			var i = _g1++;
 			var i1 = intf[i];
@@ -2931,7 +2916,8 @@ mconsole.PrinterBase.prototype = {
 	}
 	,print: function(level,params,indent,pos) {
 		params = params.slice();
-		var _g1 = 0, _g = params.length;
+		var _g1 = 0;
+		var _g = params.length;
 		while(_g1 < _g) {
 			var i = _g1++;
 			params[i] = Std.string(params[i]);
@@ -2950,27 +2936,24 @@ mconsole.PrinterBase.prototype = {
 		}
 		this.position = nextPosition;
 		this.lineNumber = nextLineNumber;
-		var color = (function($this) {
-			var $r;
-			switch( (level)[1] ) {
-			case 0:
-				$r = mconsole.ConsoleColor.white;
-				break;
-			case 1:
-				$r = mconsole.ConsoleColor.blue;
-				break;
-			case 2:
-				$r = mconsole.ConsoleColor.green;
-				break;
-			case 3:
-				$r = mconsole.ConsoleColor.yellow;
-				break;
-			case 4:
-				$r = mconsole.ConsoleColor.red;
-				break;
-			}
-			return $r;
-		}(this));
+		var color;
+		switch(level[1]) {
+		case 0:
+			color = mconsole.ConsoleColor.white;
+			break;
+		case 1:
+			color = mconsole.ConsoleColor.blue;
+			break;
+		case 2:
+			color = mconsole.ConsoleColor.green;
+			break;
+		case 3:
+			color = mconsole.ConsoleColor.yellow;
+			break;
+		case 4:
+			color = mconsole.ConsoleColor.red;
+			break;
+		}
 		var indent1 = StringTools.lpad(""," ",indent * 2);
 		message = lineColumn + indent1 + message;
 		message = message.split("\n").join("\n" + emptyLineColumn + indent1);
@@ -2993,35 +2976,32 @@ mconsole.LogPrinter.__interfaces__ = [mconsole.Printer];
 mconsole.LogPrinter.__super__ = mconsole.PrinterBase;
 mconsole.LogPrinter.prototype = $extend(mconsole.PrinterBase.prototype,{
 	printLine: function(color,line,pos) {
-		line = (function($this) {
-			var $r;
-			switch( (color)[1] ) {
-			case 0:
-				$r = line;
-				break;
-			case 1:
-				$r = mconsole.Style.style(line,37,39);
-				break;
-			case 2:
-				$r = mconsole.Style.style(line,34,39);
-				break;
-			case 3:
-				$r = mconsole.Style.style(line,32,39);
-				break;
-			case 4:
-				$r = mconsole.Style.style(line,33,39);
-				break;
-			case 5:
-				$r = mconsole.Style.style(line,31,39);
-				break;
-			}
-			return $r;
-		}(this));
+		switch(color[1]) {
+		case 0:
+			line = line;
+			break;
+		case 1:
+			line = mconsole.Style.style(line,37,39);
+			break;
+		case 2:
+			line = mconsole.Style.style(line,34,39);
+			break;
+		case 3:
+			line = mconsole.Style.style(line,32,39);
+			break;
+		case 4:
+			line = mconsole.Style.style(line,33,39);
+			break;
+		case 5:
+			line = mconsole.Style.style(line,31,39);
+			break;
+		}
 		this.output(line,pos);
 	}
 	,print: function(level,params,indent,pos) {
 		params = params.slice();
-		var _g1 = 0, _g = params.length;
+		var _g1 = 0;
+		var _g = params.length;
 		while(_g1 < _g) {
 			var i = _g1++;
 			params[i] = Std.string(params[i]);
@@ -3032,27 +3012,24 @@ mconsole.LogPrinter.prototype = $extend(mconsole.PrinterBase.prototype,{
 		pos.fileName = this.position;
 		var indentStr = "  " + StringTools.lpad(""," ",indent * 2);
 		message = indentStr + message.split("\n").join("\n" + indentStr);
-		var color = (function($this) {
-			var $r;
-			switch( (level)[1] ) {
-			case 0:
-				$r = mconsole.ConsoleColor.white;
-				break;
-			case 1:
-				$r = mconsole.ConsoleColor.blue;
-				break;
-			case 2:
-				$r = mconsole.ConsoleColor.green;
-				break;
-			case 3:
-				$r = mconsole.ConsoleColor.yellow;
-				break;
-			case 4:
-				$r = mconsole.ConsoleColor.red;
-				break;
-			}
-			return $r;
-		}(this));
+		var color;
+		switch(level[1]) {
+		case 0:
+			color = mconsole.ConsoleColor.white;
+			break;
+		case 1:
+			color = mconsole.ConsoleColor.blue;
+			break;
+		case 2:
+			color = mconsole.ConsoleColor.green;
+			break;
+		case 3:
+			color = mconsole.ConsoleColor.yellow;
+			break;
+		case 4:
+			color = mconsole.ConsoleColor.red;
+			break;
+		}
 		this.printLine(color,message,pos);
 	}
 	,__class__: mconsole.LogPrinter
@@ -3084,39 +3061,33 @@ mconsole.Console.removePrinter = function(printer) {
 mconsole.Console.haxeTrace = function(value,pos) {
 	var params = pos.customParams;
 	if(params == null) params = [];
-	var level = (function($this) {
-		var $r;
-		switch(value) {
-		case "log":
-			$r = mconsole.LogLevel.log;
-			break;
-		case "warn":
-			$r = mconsole.LogLevel.warn;
-			break;
-		case "info":
-			$r = mconsole.LogLevel.info;
-			break;
-		case "debug":
-			$r = mconsole.LogLevel.debug;
-			break;
-		case "error":
-			$r = mconsole.LogLevel.error;
-			break;
-		default:
-			$r = (function($this) {
-				var $r;
-				params.unshift(value);
-				$r = mconsole.LogLevel.log;
-				return $r;
-			}($this));
-		}
-		return $r;
-	}(this));
+	var level;
+	switch(value) {
+	case "log":
+		level = mconsole.LogLevel.log;
+		break;
+	case "warn":
+		level = mconsole.LogLevel.warn;
+		break;
+	case "info":
+		level = mconsole.LogLevel.info;
+		break;
+	case "debug":
+		level = mconsole.LogLevel.debug;
+		break;
+	case "error":
+		level = mconsole.LogLevel.error;
+		break;
+	default:
+		params.unshift(value);
+		level = mconsole.LogLevel.log;
+	}
 	if(mconsole.Console.hasConsole) mconsole.Console.callConsole(Std.string(level),params);
 	mconsole.Console.print(level,params,pos);
 }
 mconsole.Console.print = function(level,params,pos) {
-	var _g = 0, _g1 = mconsole.Console.printers;
+	var _g = 0;
+	var _g1 = mconsole.Console.printers;
 	while(_g < _g1.length) {
 		var printer = _g1[_g];
 		++_g;
@@ -3141,7 +3112,8 @@ mconsole.Console.warn = function(message,pos) {
 }
 mconsole.Console.error = function(message,stack,pos) {
 	if(stack == null) stack = haxe.CallStack.callStack();
-	var stackTrace = stack.length > 0?"\n" + mconsole.StackHelper.toString(stack):"";
+	var stackTrace;
+	if(stack.length > 0) stackTrace = "\n" + mconsole.StackHelper.toString(stack); else stackTrace = "";
 	if(mconsole.Console.hasConsole) mconsole.Console.callConsole("error",[message]);
 	mconsole.Console.print(mconsole.LogLevel.error,["Error: " + Std.string(message) + stackTrace],pos);
 }
@@ -3161,7 +3133,8 @@ mconsole.Console.assert = function(expression,message,pos) {
 mconsole.Console.count = function(title,pos) {
 	if(mconsole.Console.hasConsole) mconsole.Console.callConsole("count",[title]);
 	var position = pos.fileName + ":" + pos.lineNumber;
-	var count = mconsole.Console.counts.exists(position)?mconsole.Console.counts.get(position) + 1:1;
+	var count;
+	if(mconsole.Console.counts.exists(position)) count = mconsole.Console.counts.get(position) + 1; else count = 1;
 	mconsole.Console.counts.set(position,count);
 	mconsole.Console.print(mconsole.LogLevel.log,[title + ": " + count],pos);
 }
@@ -3207,7 +3180,8 @@ mconsole.Console.callConsole = function(method,params) {
 	}
 }
 mconsole.Console.toConsoleValues = function(params) {
-	var _g1 = 0, _g = params.length;
+	var _g1 = 0;
+	var _g = params.length;
 	while(_g1 < _g) {
 		var i = _g1++;
 		params[i] = mconsole.Console.toConsoleValue(params[i]);
@@ -3216,7 +3190,8 @@ mconsole.Console.toConsoleValues = function(params) {
 }
 mconsole.Console.toConsoleValue = function(value) {
 	var typeClass = Type.getClass(value);
-	var typeName = typeClass == null?"":Type.getClassName(typeClass);
+	var typeName;
+	if(typeClass == null) typeName = ""; else typeName = Type.getClassName(typeClass);
 	if(typeName == "Xml") {
 		var parser = new DOMParser();
 		return parser.parseFromString(value.toString(),"text/xml").firstChild;
@@ -3231,16 +3206,16 @@ mconsole.Console.toConsoleValue = function(value) {
 		return $native;
 	} else {
 		var _g = Type["typeof"](value);
-		var $e = (_g);
-		switch( $e[1] ) {
+		switch(_g[1]) {
 		case 7:
-			var e = $e[2];
+			var e = _g[2];
 			var $native = [];
 			var name = Type.getEnumName(e) + "." + Type.enumConstructor(value);
 			var params = Type.enumParameters(value);
 			if(params.length > 0) {
 				$native.push(name + "(");
-				var _g2 = 0, _g1 = params.length;
+				var _g2 = 0;
+				var _g1 = params.length;
 				while(_g2 < _g1) {
 					var i = _g2++;
 					$native.push(mconsole.Console.toConsoleValue(params[i]));
@@ -3312,37 +3287,30 @@ mconsole.StackItemHelper = function() { }
 mconsole.StackItemHelper.__name__ = ["mconsole","StackItemHelper"];
 mconsole.StackItemHelper.toString = function(item,isFirst) {
 	if(isFirst == null) isFirst = false;
-	return (function($this) {
-		var $r;
-		var $e = (item);
-		switch( $e[1] ) {
-		case 1:
-			var module = $e[2];
-			$r = module;
-			break;
-		case 3:
-			var method = $e[3], className = $e[2];
-			$r = className + "." + method;
-			break;
-		case 4:
-			var v = $e[2];
-			$r = "Lambda(" + v + ")";
-			break;
-		case 2:
-			var line = $e[4], file = $e[3], s = $e[2];
-			$r = (s == null?file.split("::").join(".") + ":" + line:mconsole.StackItemHelper.toString(s)) + ":" + line;
-			break;
-		case 0:
-			$r = "(anonymous function)";
-			break;
-		}
-		return $r;
-	}(this));
+	switch(item[1]) {
+	case 1:
+		var module = item[2];
+		return module;
+	case 3:
+		var method = item[3];
+		var className = item[2];
+		return className + "." + method;
+	case 4:
+		var v = item[2];
+		return "Lambda(" + v + ")";
+	case 2:
+		var line = item[4];
+		var file = item[3];
+		var s = item[2];
+		return (s == null?file.split("::").join(".") + ":" + line:mconsole.StackItemHelper.toString(s)) + ":" + line;
+	case 0:
+		return "(anonymous function)";
+	}
 }
 mconsole.Style = function() { }
 mconsole.Style.__name__ = ["mconsole","Style"];
 mconsole.Style.style = function(string,start,stop) {
-	return mconsole.Style.clicolor?"[" + start + "m" + string + "[" + stop + "m":string;
+	if(mconsole.Style.clicolor) return "[" + start + "m" + string + "[" + stop + "m"; else return string;
 }
 mconsole.Style.bold = function(s) {
 	return mconsole.Style.style(s,1,22);
@@ -3438,10 +3406,9 @@ ods.OdsChecker = function() {
 ods.OdsChecker.__name__ = ["ods","OdsChecker"];
 ods.OdsChecker.prototype = {
 	checkRec: function(doc,hasMany) {
-		var $e = (doc);
-		switch( $e[1] ) {
+		switch(doc[1]) {
 		case 0:
-			var l = $e[2];
+			var l = doc[2];
 			var save = this.save();
 			var _g = 0;
 			while(_g < l.length) {
@@ -3454,19 +3421,19 @@ ods.OdsChecker.prototype = {
 			}
 			break;
 		case 1:
-			var r = $e[2];
+			var r = doc[2];
 			return this.checkLine(r,hasMany);
 		case 2:
-			var d = $e[2];
+			var d = doc[2];
 			while(this.checkRec(d,true)) {
 			}
 			break;
 		case 3:
-			var d = $e[2];
+			var d = doc[2];
 			this.checkRec(d,hasMany);
 			break;
 		case 4:
-			var l = $e[2];
+			var l = doc[2];
 			var save = this.save();
 			var _g = 0;
 			while(_g < l.length) {
@@ -3478,7 +3445,8 @@ ods.OdsChecker.prototype = {
 			}
 			return false;
 		case 5:
-			var sub = $e[3], r = $e[2];
+			var sub = doc[3];
+			var r = doc[2];
 			var save = this.save();
 			var prev = this.status.obj;
 			this.status.out = new Array();
@@ -3497,7 +3465,8 @@ ods.OdsChecker.prototype = {
 				this.restore(save);
 				return false;
 			}
-			var _g = 0, _g1 = this.status.out;
+			var _g = 0;
+			var _g1 = this.status.out;
 			while(_g < _g1.length) {
 				var o = _g1[_g];
 				++_g;
@@ -3508,7 +3477,8 @@ ods.OdsChecker.prototype = {
 			this.status.obj = prev;
 			break;
 		case 6:
-			var d = $e[3], cond = $e[2];
+			var d = doc[3];
+			var cond = doc[2];
 			while(!this.checkRec(cond,false)) {
 				this.lastError = ods.Check.CMatch;
 				if(!this.checkRec(d,true)) return false;
@@ -3527,7 +3497,8 @@ ods.OdsChecker.prototype = {
 		var n = 0;
 		var cur = null;
 		var curCol = -1;
-		var x = l.name == null?Xml.createDocument():Xml.createElement(l.name);
+		var x;
+		if(l.name == null) x = Xml.createDocument(); else x = Xml.createElement(l.name);
 		var rindex = 0;
 		var rblank = ods.Column.R(ods.Rule.RBlank);
 		var obj = { };
@@ -3539,7 +3510,7 @@ ods.OdsChecker.prototype = {
 					cur = cols.pop();
 					if(cur == null) n = 10000; else {
 						var repeat = cur.x.get("table:number-columns-repeated");
-						n = repeat == null?1:Std.parseInt(repeat);
+						if(repeat == null) n = 1; else n = Std.parseInt(repeat);
 					}
 				}
 				var v;
@@ -3559,7 +3530,7 @@ ods.OdsChecker.prototype = {
 					} else this.error(ods.Check.CInvalid(v,l,r,this.status.curRow,curCol));
 					return false;
 				}
-				switch( (rule)[1] ) {
+				switch(rule[1]) {
 				case 4:
 					if(cur == null) throw "__break__";
 					curCol += n - 1;
@@ -3633,19 +3604,19 @@ ods.OdsChecker.prototype = {
 		return v;
 	}
 	,checkColumn: function(c,v,x,obj) {
-		var $e = (c);
-		switch( $e[1] ) {
+		switch(c[1]) {
 		case 2:
-			var r = $e[2];
+			var r = c[2];
 			if(r != ods.Rule.RSkip && this.checkRule(r,v) == null) return r;
 			break;
 		case 3:
-			var c1 = $e[2];
+			var c1 = c[2];
 			var r = this.checkColumn(c1,v,x,obj);
 			if(r != null && v != "") return r;
 			break;
 		case 0:
-			var r = $e[3], name = $e[2];
+			var r = c[3];
+			var name = c[2];
 			var k = this.checkRule(r,v);
 			if(k == null) return r;
 			var v1 = x.get(name);
@@ -3654,7 +3625,8 @@ ods.OdsChecker.prototype = {
 			this.addField(obj,name,k);
 			break;
 		case 1:
-			var r = $e[3], name = $e[2];
+			var r = c[3];
+			var name = c[2];
 			var k = this.checkRule(r,v);
 			if(k == null) return r;
 			var n = Xml.createElement(name);
@@ -3663,7 +3635,7 @@ ods.OdsChecker.prototype = {
 			this.addField(obj,name,k);
 			break;
 		case 4:
-			var c1 = $e[2];
+			var c1 = c[2];
 			return this.checkColumn(c1,v,x,obj);
 		}
 		return null;
@@ -3681,31 +3653,37 @@ ods.OdsChecker.prototype = {
 		} else obj[name] = v;
 	}
 	,checkRule: function(r,v) {
-		var $e = (r);
-		switch( $e[1] ) {
+		switch(r[1]) {
 		case 0:
 			return null;
 		case 1:
-			return ods.OdsChecker.eblank.match(v)?"":null;
+			if(ods.OdsChecker.eblank.match(v)) return ""; else return null;
+			break;
 		case 2:
 			v = v.split(" ").join("");
-			return ods.OdsChecker.eint.match(v)?Std.parseInt(v):null;
+			if(ods.OdsChecker.eint.match(v)) return Std.parseInt(v); else return null;
+			break;
 		case 3:
 			if(v == "true" || v == "1") return true;
 			if(v == "false" || v == "0") return false;
 			return null;
 		case 4:
-			return ods.OdsChecker.efloat.match(v)?Std.parseFloat(v.split(",").join(".")):null;
+			if(ods.OdsChecker.efloat.match(v)) return Std.parseFloat(v.split(",").join(".")); else return null;
+			break;
 		case 5:
 			v = StringTools.trim(v);
-			return v == ""?null:v;
+			if(v == "") return null; else return v;
+			break;
 		case 6:
-			var e = $e[2];
-			return e.match(v)?v:null;
+			var e = r[2];
+			if(e.match(v)) return v; else return null;
+			break;
 		case 7:
-			var idx = $e[3], vl = $e[2];
+			var idx = r[3];
+			var vl = r[2];
 			v = StringTools.trim(v);
-			var _g1 = 0, _g = vl.length;
+			var _g1 = 0;
+			var _g = vl.length;
 			while(_g1 < _g) {
 				var i = _g1++;
 				if(v == vl[i]) {
@@ -3715,28 +3693,34 @@ ods.OdsChecker.prototype = {
 			}
 			return null;
 		case 8:
-			var e = $e[3], vl = $e[2];
+			var e = r[3];
+			var vl = r[2];
 			v = StringTools.trim(v);
-			var _g1 = 0, _g = vl.length;
+			var _g1 = 0;
+			var _g = vl.length;
 			while(_g1 < _g) {
 				var i = _g1++;
 				if(v == vl[i]) return Type.createEnumIndex(e,i);
 			}
 			return null;
 		case 9:
-			var values = $e[3], vl = $e[2];
+			var values = r[3];
+			var vl = r[2];
 			v = StringTools.trim(v);
-			var _g1 = 0, _g = vl.length;
+			var _g1 = 0;
+			var _g = vl.length;
 			while(_g1 < _g) {
 				var i = _g1++;
 				if(v == vl[i]) return values[i];
 			}
 			return null;
 		case 10:
-			var r1 = $e[3], sep = $e[2];
+			var r1 = r[3];
+			var sep = r[2];
 			var a = new Array();
 			if(v != "") {
-				var _g = 0, _g1 = v.split(sep);
+				var _g = 0;
+				var _g1 = v.split(sep);
 				while(_g < _g1.length) {
 					var v1 = _g1[_g];
 					++_g;
@@ -3747,15 +3731,14 @@ ods.OdsChecker.prototype = {
 			}
 			return a;
 		case 11:
-			var parser = $e[3], r_eRCustom_0 = $e[2];
+			var parser = r[3];
 			try {
 				return parser(v);
 			} catch( e ) {
 				if( js.Boot.__instanceof(e,ods.CustomError) ) {
-					var $e = (e);
-					switch( $e[1] ) {
+					switch(e[1]) {
 					case 0:
-						var msg = $e[2];
+						var msg = e[2];
 						this.customMessage = msg;
 						break;
 					}
@@ -3770,28 +3753,21 @@ ods.OdsChecker.prototype = {
 		if(this.errorPos(e) > this.errorPos(this.lastError)) this.lastError = e;
 	}
 	,errorPos: function(e) {
-		return (function($this) {
-			var $r;
-			var $e = (e);
-			switch( $e[1] ) {
-			case 0:
-				$r = -1;
-				break;
-			case 1:
-				var r = $e[3], e_eCExpected_0 = $e[2];
-				$r = r << 16;
-				break;
-			case 2:
-				var c = $e[6], r = $e[5], e_eCInvalid_2 = $e[4], e_eCInvalid_1 = $e[3], e_eCInvalid_0 = $e[2];
-				$r = (r << 16) + c;
-				break;
-			case 3:
-				var c = $e[6], r = $e[5], e_eCCustom_2 = $e[4], e_eCCustom_1 = $e[3], e_eCCustom_0 = $e[2];
-				$r = (r << 16) + c;
-				break;
-			}
-			return $r;
-		}(this));
+		switch(e[1]) {
+		case 0:
+			return -1;
+		case 1:
+			var r = e[3];
+			return r << 16;
+		case 2:
+			var c = e[6];
+			var r = e[5];
+			return (r << 16) + c;
+		case 3:
+			var c = e[6];
+			var r = e[5];
+			return (r << 16) + c;
+		}
 	}
 	,columnName: function(c) {
 		var s = "";
@@ -3810,7 +3786,8 @@ ods.OdsChecker.prototype = {
 	}
 	,save: function() {
 		var odup = { };
-		var _g = 0, _g1 = Reflect.fields(this.status.obj);
+		var _g = 0;
+		var _g1 = Reflect.fields(this.status.obj);
 		while(_g < _g1.length) {
 			var f = _g1[_g];
 			++_g;
@@ -3823,41 +3800,38 @@ ods.OdsChecker.prototype = {
 		return { curRow : this.status.curRow, rows : this.status.rows.slice(), out : this.status.out.slice(), rowRepeat : this.status.rowRepeat, obj : odup};
 	}
 	,errorString: function(e) {
-		return (function($this) {
-			var $r;
-			var $e = (e);
-			switch( $e[1] ) {
-			case 0:
-				$r = "No Error";
-				break;
-			case 1:
-				var row = $e[3], l = $e[2];
-				$r = "line " + row + " expected " + (l.name == null?Std.string(l.cols):l.name);
-				break;
-			case 2:
-				var col = $e[6], row = $e[5], r = $e[4], l = $e[3], v = $e[2];
-				$r = (function($this) {
-					var $r;
-					var inf = $this.smartMatching(v,r);
-					var rule = $this.ruleString(inf.r);
-					$r = "at " + $this.columnName(col) + row + " '" + inf.v + "' should be " + rule + (l.name == null?"":" (" + l.name + ")");
-					return $r;
-				}($this));
-				break;
-			case 3:
-				var col = $e[6], row = $e[5], msg = $e[4], l = $e[3], v = $e[2];
-				$r = "at " + $this.columnName(col) + row + " '" + v + "' " + msg + (l.name == null?"":" (" + l.name + ")");
-				break;
-			}
-			return $r;
-		}(this));
+		switch(e[1]) {
+		case 0:
+			return "No Error";
+		case 1:
+			var row = e[3];
+			var l = e[2];
+			return "line " + row + " expected " + (l.name == null?Std.string(l.cols):l.name);
+		case 2:
+			var col = e[6];
+			var row = e[5];
+			var r = e[4];
+			var l = e[3];
+			var v = e[2];
+			var inf = this.smartMatching(v,r);
+			var rule = this.ruleString(inf.r);
+			return "at " + this.columnName(col) + row + " '" + inf.v + "' should be " + rule + (l.name == null?"":" (" + l.name + ")");
+		case 3:
+			var col = e[6];
+			var row = e[5];
+			var msg = e[4];
+			var l = e[3];
+			var v = e[2];
+			return "at " + this.columnName(col) + row + " '" + v + "' " + msg + (l.name == null?"":" (" + l.name + ")");
+		}
 	}
 	,smartMatching: function(v,r) {
-		var $e = (r);
-		switch( $e[1] ) {
+		switch(r[1]) {
 		case 10:
-			var r1 = $e[3], sep = $e[2];
-			var _g = 0, _g1 = v.split(sep);
+			var r1 = r[3];
+			var sep = r[2];
+			var _g = 0;
+			var _g1 = v.split(sep);
 			while(_g < _g1.length) {
 				var v1 = _g1[_g];
 				++_g;
@@ -3870,108 +3844,74 @@ ods.OdsChecker.prototype = {
 		return { v : v, r : r};
 	}
 	,ruleString: function(r) {
-		return (function($this) {
-			var $r;
-			var $e = (r);
-			switch( $e[1] ) {
-			case 0:
-				$r = "skip";
-				break;
-			case 1:
-				$r = "blank";
-				break;
-			case 2:
-				$r = "int";
-				break;
-			case 3:
-				$r = "bool";
-				break;
-			case 4:
-				$r = "float";
-				break;
-			case 5:
-				$r = "text";
-				break;
-			case 6:
-				$r = "regexp";
-				break;
-			case 7:
-				var r_eRValues_1 = $e[3], vl = $e[2];
-				$r = "one of these : (" + Lambda.map(vl,function(v) {
-					return "'" + v + "'";
-				}).join(",") + ")";
-				break;
-			case 8:
-				var r_eREnum_1 = $e[3], vl = $e[2];
-				$r = "one of these : (" + Lambda.map(vl,function(v) {
-					return "'" + v + "'";
-				}).join(",") + ")";
-				break;
-			case 9:
-				var r_eRMap_1 = $e[3], vl = $e[2];
-				$r = "one of these : (" + Lambda.map(vl,function(v) {
-					return "'" + v + "'";
-				}).join(",") + ")";
-				break;
-			case 10:
-				var r1 = $e[3], sep = $e[2];
-				$r = "an array of " + $this.ruleString(r1) + " separated by '" + sep + "'";
-				break;
-			case 11:
-				var r_eRCustom_1 = $e[3], name = $e[2];
-				$r = name;
-				break;
-			}
-			return $r;
-		}(this));
+		switch(r[1]) {
+		case 0:
+			return "skip";
+		case 1:
+			return "blank";
+		case 2:
+			return "int";
+		case 3:
+			return "bool";
+		case 4:
+			return "float";
+		case 5:
+			return "text";
+		case 6:
+			return "regexp";
+		case 7:
+			var vl = r[2];
+			return "one of these : (" + Lambda.map(vl,function(v) {
+				return "'" + v + "'";
+			}).join(",") + ")";
+		case 8:
+			var vl = r[2];
+			return "one of these : (" + Lambda.map(vl,function(v) {
+				return "'" + v + "'";
+			}).join(",") + ")";
+		case 9:
+			var vl = r[2];
+			return "one of these : (" + Lambda.map(vl,function(v) {
+				return "'" + v + "'";
+			}).join(",") + ")";
+		case 10:
+			var r1 = r[3];
+			var sep = r[2];
+			return "an array of " + this.ruleString(r1) + " separated by '" + sep + "'";
+		case 11:
+			var name = r[2];
+			return name;
+		}
 	}
 	,hasProperEnding: function(doc) {
-		return (function($this) {
-			var $r;
-			var $e = (doc);
-			switch( $e[1] ) {
-			case 3:
-			case 2:
-				$r = false;
-				break;
-			case 1:
-				$r = true;
-				break;
-			case 5:
-				var d = $e[3], doc_eDGroup_0 = $e[2];
-				$r = $this.hasProperEnding(d);
-				break;
-			case 4:
-				var a = $e[2];
-				$r = (function($this) {
-					var $r;
-					var v = a.length > 0;
-					{
-						var _g = 0;
-						while(_g < a.length) {
-							var x = a[_g];
-							++_g;
-							if(!$this.hasProperEnding(x)) {
-								v = false;
-								break;
-							}
-						}
-					}
-					$r = v;
-					return $r;
-				}($this));
-				break;
-			case 0:
-				var a = $e[2];
-				$r = a.length > 0 && $this.hasProperEnding(a[a.length - 1]);
-				break;
-			case 6:
-				var doc_eDWhileNot_1 = $e[3], d = $e[2];
-				$r = $this.hasProperEnding(d);
-				break;
+		switch(doc[1]) {
+		case 3:case 2:
+			return false;
+		case 1:
+			return true;
+		case 5:
+			var d = doc[3];
+			return this.hasProperEnding(d);
+		case 4:
+			var a = doc[2];
+			var v = a.length > 0;
+			var _g = 0;
+			while(_g < a.length) {
+				var x = a[_g];
+				++_g;
+				if(!this.hasProperEnding(x)) {
+					v = false;
+					break;
+				}
 			}
-			return $r;
-		}(this));
+			return v;
+		case 0:
+			var a = doc[2];
+			return a.length > 0 && this.hasProperEnding(a[a.length - 1]);
+		case 6:
+			var d = doc[2];
+			return this.hasProperEnding(d);
+		}
 	}
 	,getLines: function(sheet) {
 		var s = this.sheets.get(sheet);
@@ -4003,7 +3943,8 @@ ods.OdsChecker.prototype = {
 				var repeat1 = c.x.get("table:number-columns-repeated");
 				if(repeat1 == null) cols.push(me.extractText(c,line)); else {
 					var t = me.extractText(c,line);
-					var _g1 = 0, _g = Std.parseInt(repeat1);
+					var _g1 = 0;
+					var _g = Std.parseInt(repeat1);
 					while(_g1 < _g) {
 						var i = _g1++;
 						cols.push(t);
@@ -4021,7 +3962,8 @@ ods.OdsChecker.prototype = {
 		if(!this.checkRec(doc,false)) throw "In '" + sheet + "' " + this.errorString(this.lastError);
 		if(this.status.rows.length > 0 && !this.hasProperEnding(doc)) throw "In '" + sheet + "' " + this.errorString(this.lastError) + " (maybe extra data ?)";
 		var x = Xml.createDocument();
-		var _g = 0, _g1 = this.status.out;
+		var _g = 0;
+		var _g1 = this.status.out;
 		while(_g < _g1.length) {
 			var o = _g1[_g];
 			++_g;
@@ -4060,7 +4002,8 @@ ods.OdsChecker.prototype = {
 				break;
 			}
 		}
-		var data = content.compressed?format.tools.Inflate.run(content.data):content.data;
+		var data;
+		if(content.compressed) data = format.tools.Inflate.run(content.data); else data = content.data;
 		this.load(Xml.parse(data.toString()));
 	}
 	,__class__: ods.OdsChecker
@@ -4106,7 +4049,7 @@ sys.FileSystem.join = function(p1,p2,p3) {
 }
 sys.FileSystem.readRecursive = function(path,filter) {
 	var files = sys.FileSystem.readRecursiveInternal(path,null,filter);
-	return files == null?[]:files;
+	if(files == null) return []; else return files;
 }
 sys.FileSystem.readRecursiveInternal = function(root,dir,filter) {
 	if(dir == null) dir = "";
@@ -4114,12 +4057,14 @@ sys.FileSystem.readRecursiveInternal = function(root,dir,filter) {
 	var dirPath = js.Node.path.join(root == null?"":root,dir == null?"":dir,"");
 	if(!(js.Node.fs.existsSync(dirPath) && sys.FileSystem.isDirectory(dirPath))) return null;
 	var result = [];
-	var _g = 0, _g1 = js.Node.fs.readdirSync(dirPath);
+	var _g = 0;
+	var _g1 = js.Node.fs.readdirSync(dirPath);
 	while(_g < _g1.length) {
 		var file = _g1[_g];
 		++_g;
 		var fullPath = js.Node.path.join(dirPath == null?"":dirPath,file == null?"":file,"");
-		var relPath = dir == ""?file:js.Node.path.join(dir == null?"":dir,file == null?"":file,"");
+		var relPath;
+		if(dir == "") relPath = file; else relPath = js.Node.path.join(dir == null?"":dir,file == null?"":file,"");
 		if(js.Node.fs.existsSync(fullPath)) {
 			if(sys.FileSystem.isDirectory(fullPath)) {
 				if(fullPath.charCodeAt(fullPath.length - 1) == 47) fullPath = HxOverrides.substr(fullPath,0,-1);
@@ -4310,4 +4255,4 @@ ods.OdsChecker.efloat = new EReg("^-?([0-9]+)|([0-9]*[.,][0-9]+)$","");
 catapult.Server.main();
 })();
 
-//@ sourceMappingURL=catapult.js.map
+//# sourceMappingURL=catapult.js.map

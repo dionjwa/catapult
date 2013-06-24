@@ -8,3 +8,6 @@
 	path = lib/flambe
 	url = git@github.com:dionjwa/flambe.git
 	branch = catapult
+[submodule "lib/nodejs_std"]
+	path = lib/nodejs_std
+	url = git@github.com:dionjwa/nodejs-std.git
