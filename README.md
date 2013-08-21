@@ -21,8 +21,6 @@ The main goal is to see changes in your game as soon as any change is detected f
 
 ## Installation
 
-Build from source or install via npm (easier).
-
 ### Install via npm
 
 	npm install catapult
@@ -30,35 +28,15 @@ Build from source or install via npm (easier).
 Install the demo folder
 
 	git clone --recursive git://github.com/dionjwa/catapult.git
+
+And run the catapult server with with: 
+
+	catapult --config=catapult/demo/.catapult_js
+
+Then in a browser go to:
+
+	http://localhost:8000	
 	
-And run with: 
-
-	node node_modules/catapult/index.js
-
-### Or Install from source:
-
-The server is at the currently in the experimental stage and is written for [Haxe 3][haxe3], but is platform/language agnostic.  
-
-Clone this repo and add required dependencies:
-
-	git clone --recursive git://github.com/dionjwa/catapult.git
-	cd catapult
-	npm install websocket
-	npm install commander
-	npm install node-static
-	npm install source-map-support
-	haxelib install format
-	haxe build.hxml
-	
-And run with: 
-
-	node catapult.js --config=demo/.catapult_js
-	
-### Using the server
-
-In a browser, go to 
-
-	http://localhost:8000
 	
 Then open the "test.ods" file in LibreOffice.  You can edit the x, y, and scale values, and the images will be automatically updated.
 
@@ -68,17 +46,13 @@ See demo/web/client.js for an example HTML5 implementation of a catapult client.
 
 ### Flambe demo
 
-You'll need the forked version of flambe to work (it's there as a submodule), and you'll need these haxelib(s):
-
-	haxelib install format
-
 Build the client with 
 
 	haxe demo/client.hxml
 	
 Then run the server with
 	
-	node catapult.js --config demo/.catapult_flambe
+	catapult --config=demo/.catapult_flambe
 	
 	
 See demo/src/demo/FlambeClient.hx for an example Flambe implementation of a catapult client.
@@ -102,11 +76,3 @@ Also, try these URLs in your web browser to see the data format of the asset man
 ## Building your own client 
 
 The catapult server is platform agnostic: you can simply poll the asset server from any client using http requests. 
-
-Todo:
-
-- [x] Add some example client reloading using [Flambe][flambe].
-	
-
-
-

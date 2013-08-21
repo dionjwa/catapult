@@ -6,15 +6,15 @@ if [ $# -lt 1 ]; then
     exit 1
 fi
 
-if ! git diff-index --quiet HEAD --; then
-    echo "You have uncommitted changes"
-    exit 1
-fi
+# if ! git diff-index --quiet HEAD --; then
+#     echo "You have uncommitted changes"
+#     exit 1
+# fi
 
 VERSION=$1
 
 # Bump the version number
-bin/set-version "$VERSION"
+bin/set_version "$VERSION"
 
 EXPORT_DIR=/tmp/catapult
 
