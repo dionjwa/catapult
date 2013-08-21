@@ -1,6 +1,21 @@
 #!/bin/bash
 # Build and upload to npm
 
+if [ $# -lt 1 ]; then
+    echo "Usage: $0 VERSION"
+    exit 1
+fi
+
+if ! git diff-index --quiet HEAD --; then
+    echo "You have uncommitted changes"
+    exit 1
+fi
+
+VERSION=$1
+
+# Bump the version number
+bin/set-version "$VERSION"
+
 EXPORT_DIR=/tmp/catapult
 
 rm -rf $EXPORT_DIR

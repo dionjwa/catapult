@@ -1,0 +1,14 @@
+{
+	"folders":
+	[
+		{
+			"file_exclude_patterns":
+			[
+				".tags",
+				".tags_sorted_by_file"
+			],
+			"follow_symlinks": true,
+			"path": "/Users/dion/storage/projects/haxelibs/catapult"
+		},
+	]
+}

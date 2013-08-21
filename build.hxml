@@ -18,3 +18,11 @@
 -main catapult.Server
 
 -js catapult.js
+
+--next
+
+-cmd echo "#!/usr/bin/env node"|cat - catapult.js > /tmp/out && mv /tmp/out catapult.js
+
+--next
+
+-cmd chmod 755 catapult.js

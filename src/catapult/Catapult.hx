@@ -32,6 +32,10 @@ typedef ServedManifestMessage = {
 	var manifest :ServedManifest;
 }
 
+typedef Message = {
+	var type :String;
+}
+
 typedef FileChangedMessage = {>FileDef,
 	var type :String;
 	var manifest :String;
@@ -47,6 +51,7 @@ typedef ODSDataChangedMessage = {>FileChangedMessage,
 
 class Catapult
 {
-	inline public static var FILE_CHANGED_MESSAGE_NAME :String = "file_changed"; 
-	inline public static var FILE_CHANGED_MESSAGE_NAME_ODS :String = "file_changed_ods";
+	inline public static var MESSAGE_TYPE_RESTART_ :String = "restart";
+	inline public static var MESSAGE_TYPE_FILE_CHANGED :String = "file_changed";
+	inline public static var MESSAGE_TYPE_FILE_CHANGED_ODS :String = "file_changed_ods";
 }

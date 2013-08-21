@@ -33,7 +33,6 @@ class FlambeClient
 	private static function main ()
 	{
 		System.init();
-		
 		flambe.asset.CatapultTools.getManifest("bootstrap", function(manifest :Manifest, err :Dynamic) :Void {
 			if (err != null) 
 			{

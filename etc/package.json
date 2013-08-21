@@ -1,29 +1,34 @@
 {
-  "name": "catapult",
-  "version": "1.0.4",
-  "description": "Game development asset server.  Monitors files for changes and notifies clients of changes, serves spreadsheets as json. ",
-  "main": "index.js",
+  "author": "Dion Whitehead Amago",
+  "bin": {
+    "catapult": "./catapult.js"
+  },
   "dependencies": {
     "commander": "~1.1.1",
-    "source-map-support": "~0.1.5",
-    "websocket": "~1.0.8",
+    "connect": "~2.7.3",
     "node-static": "~0.6.9",
-    "connect": "~2.7.3"
+    "source-map-support": "~0.1.5",
+    "websocket": "~1.0.8"
   },
+  "description": "Game development asset server.  Monitors files for changes and notifies clients of changes, serves spreadsheets as json. ",
   "devDependencies": {},
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "keywords": [
+    "node.js",
+    "game",
+    "haxe",
+    "flambe"
+  ],
+  "license": "BSD",
+  "main": "index.js",
+  "name": "catapult",
+  "readmeFilename": "README.md",
   "repository": {
     "type": "git",
     "url": "https://github.com/dionjwa/catapult"
   },
-  "keywords": [
-    "node.js",
-    "game",
-    "haxe"
-  ],
-  "author": "Dion Whitehead Amago",
-  "license": "BSD",
-  "readmeFilename": "README.md"
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "start": "node catapult.js",
+  "version": "1.0.6"
 }

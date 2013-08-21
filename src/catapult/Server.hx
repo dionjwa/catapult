@@ -168,7 +168,7 @@ class Server
 	{
 		//Process the command line args
 		//https://github.com/visionmedia/commander.js
-		var program :Dynamic= Node.require('commander');
+		var program :Dynamic = Node.require('commander');
 		program
 			.version('Blink Asset Server 0.1.  Serving up flaming hot assets since 1903.\n Run in the root of your game project.')
 			.option('-c, --config <config>', 'Use a non-default config file (defaults to ".catapult") ', untyped String, ".catapult")
@@ -181,6 +181,8 @@ class Server
 				createBlankCatapultFile();
 				Console.info('Created config file .catapult');
 			});
+
+
 		_configPath = program.config;
 		Console.info("Config path=" + _configPath);
 		loadConfig();
@@ -423,6 +425,12 @@ class Server
 			return;
 		}
 		
+		function sendMessageToAllClients(msg :String) {
+			for (connection in _websocketServer.connections) {
+				connection.sendUTF(msg);
+			}
+		}
+
 		// Console.info("File changed: " + Json.stringify(file, null, "\t"));
 		file.md5 = FileSystem.signature(file.absolutePath);
 		file.bytes = FileSystem.stat(file.absolutePath).size;
@@ -432,11 +440,16 @@ class Server
 			_manifests.get(file.manifestKey).md5 = null;
 		}
 		
-		var message :FileChangedMessage = {type:Catapult.FILE_CHANGED_MESSAGE_NAME, name:file.relativePath, md5:file.md5, manifest:file.manifestKey, bytes:file.bytes};
+		var message :FileChangedMessage = {type:Catapult.MESSAGE_TYPE_FILE_CHANGED, name:file.relativePath, md5:file.md5, manifest:file.manifestKey, bytes:file.bytes};
 		var messageString = Json.stringify(message, null, "\t");
 		
-		for (connection in _websocketServer.connections) {
-			connection.sendUTF(messageString);
+		sendMessageToAllClients(messageString);
+
+		//Send a reload message on a js file change
+		if (file.relativePath.endsWith(".js")) {
+			var restartMessage :Message = {type:Catapult.MESSAGE_TYPE_RESTART_};
+			messageString = Json.stringify(restartMessage, null, "\t");
+			sendMessageToAllClients(messageString);
 		}
 		
 		if (file.relativePath.endsWith(".ods")) {
@@ -449,13 +462,10 @@ class Server
 			var update = function() {
 				var data = OdsRuntimeParser.parse(file.absolutePath);
 				var dataMessage :ODSDataChangedMessage = cast message;
-				dataMessage.type = Catapult.FILE_CHANGED_MESSAGE_NAME_ODS;
+				dataMessage.type = Catapult.MESSAGE_TYPE_FILE_CHANGED_ODS;
 				dataMessage.data = cast data;
 				var dataMessageString = Json.stringify(dataMessage, null, "\t");
-				
-				for (connection in _websocketServer.connections) {
-					connection.sendUTF(dataMessageString);
-				}
+				sendMessageToAllClients(dataMessageString);
 			}
 			//Save operations sometimes cause the file size to be 0.  It's probably a copy then rename operation
 			if (FileSystem.stat(file.absolutePath).size == 0) {
