@@ -27,6 +27,7 @@ typedef Trigger = {
 	@:optional var command :String;
 	@:optional var args :Array<String>;
 	@:optional var broadcast_event :Dynamic;
+	@:optional var on_success_event :Dynamic;
 }
 //Loaded on startup
 typedef Config = {
@@ -99,7 +100,9 @@ class Server
 				{
 					"regex" : ".*hx",
 					"command": "haxe",
-					"args":["demo/client.hxml"]
+					"args":["demo/client.hxml"],
+					"on_success_event":{"type":"reload"}
+
 				},
 				{
 					"regex" : ".*.js",
@@ -445,7 +448,8 @@ class Server
 	
 	function onFileChanged(file :WatchedFile) :Void
 	{
-		Console.info({"log":"onFileChanged", "file":file});
+		// Console.info({"log":"onFileChanged", "file":file});
+		Console.info("onFileChanged:" + file.relativePath);
 		if (file.relativePath == ".catapult")
 		{
 			Console.warn(".catapult changed, reloading config!!");
@@ -522,8 +526,13 @@ class Server
 							Console.info('stderr: ' + data);
 						});
 
-						commandProcess.on('close', function (code) {
+						commandProcess.on('close', function (code :Int) {
 							Console.info('child process exited with code ' + code);
+
+							if (code == 0 && commandData.on_success_event != null) {
+								Console.info({"log":"on_success_event", "message":commandData.on_success_event});
+								sendMessageToAllClients(Json.stringify(commandData.on_success_event, null, "\t"));
+							}
 						});	
 					}
 

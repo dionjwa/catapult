@@ -10,9 +10,8 @@
 -lib format #Needed for the ods parser
 
 -cp lib/mconsole/src
--cp lib/nodejs_std/src
+-cp lib/nodejs/src
 -cp lib/hxods
-
 -cp src
 
 -main catapult.Server

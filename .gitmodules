@@ -4,10 +4,6 @@
 [submodule "lib/mconsole"]
 	path = lib/mconsole
 	url = git://github.com/dionjwa/mconsole.git
-[submodule "lib/flambe"]
-	path = lib/flambe
-	url = git@github.com:dionjwa/flambe.git
-	branch = catapult
-[submodule "lib/nodejs_std"]
-	path = lib/nodejs_std
-	url = git@github.com:dionjwa/nodejs-std.git
+[submodule "lib/nodejs"]
+	path = lib/nodejs
+	url = https://github.com/dionjwa/nodejs-std

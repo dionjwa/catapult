@@ -43,7 +43,7 @@ class CatapultClient
 
     private function onMessage (message :String)
     {
-        Log.info("onMessage on new CatapultClient");
+        Log.info("onMessage on new CatapultClient " + message);
         var message = Json.parse(message);
         switch (message.type) {
         case "file_changed":

@@ -11,6 +11,12 @@
 		"demo/deploy_flambe/web"
 	],
 	"triggers": [
-		{"event":"file_changed", "regex":".*.hx", "command":"haxe", "args":["demo/client.hxml"]}
+		{
+			"event":"file_changed", 
+			"regex":".*.hx", 
+			"command":"haxe", 
+			"args":["demo/client.hxml"],
+			"on_success_event":{"type":"restart"}
+		}
 	]
 }

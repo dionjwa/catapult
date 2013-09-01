@@ -38,7 +38,7 @@ class FlambeClient
 			if (err != null) {
 				Console.error(err);
 			} else {
-				Console.info({log:"Received manifest", manifest:manifest});
+				Console.info({log:"Received manifests", manifest:manifest});
 				var loader = System.loadAssetPack(manifest);
 		
 				// Add listeners
