@@ -15,6 +15,7 @@ import flambe.script.AnimateBy;
 @:build(ods.Data.build("../assets/bootstrap/stuff/test.ods","items","id"))
 enum Item {}
 
+
 typedef ItemData = {
 	var id : Item;
 	var w : Float;
@@ -34,12 +35,9 @@ class FlambeClient
 	{
 		System.init();
 		flambe.asset.CatapultTools.getManifest("bootstrap", function(manifest :Manifest, err :Dynamic) :Void {
-			if (err != null) 
-			{
+			if (err != null) {
 				Console.error(err);
-			} 
-			else 
-			{
+			} else {
 				Console.info({log:"Received manifest", manifest:manifest});
 				var loader = System.loadAssetPack(manifest);
 		
@@ -59,7 +57,7 @@ class FlambeClient
 	
 	private static function onSuccess (pack :AssetPack)
 	{
-		Console.info({log:"onSuccesss", pack:pack});
+		Console.info({log:"onSuccess", pack:pack});
 		System.root.addChild(new Entity()
 			.add(new FillSprite(0x303030, System.stage.width, System.stage.height)));
 		
@@ -67,7 +65,7 @@ class FlambeClient
 		
 		flambe.asset.CatapultTools.updateODSDataOnServerChange("items", cast DATA, updateItems.bind(pack));
 	}
-	
+
 	private static function updateItems(pack :AssetPack) :Void
 	{
 		if (_layer == null) {

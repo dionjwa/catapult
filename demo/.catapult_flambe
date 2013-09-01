@@ -10,11 +10,7 @@
 		"demo/src",
 		"demo/deploy_flambe/web"
 	],
-	"commands" : [
-		{
-			"suffix" : ".hx",
-			"command": "haxe",
-			"args":["demo/client.hxml"]
-		}
+	"triggers": [
+		{"event":"file_changed", "regex":".*.hx", "command":"haxe", "args":["demo/client.hxml"]}
 	]
 }

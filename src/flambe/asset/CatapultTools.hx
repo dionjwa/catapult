@@ -86,7 +86,7 @@ class CatapultTools
 					name = name.removeFileExtension();
 				}
 				
-				manifest.add(name, Browser.location.host + "/" + manifestId + "/" + asset.name + "?md5=" + asset.md5, 0, type); 
+				manifest.add(name, "http://" + Browser.location.host + "/" + manifestId + "/" + asset.name + "?md5=" + asset.md5, 0, type); 
 			}
 			cb(manifest, null);
 		}

@@ -5,6 +5,8 @@
 	"manifests" : [
 		{"id" : "bootstrap", "path" : "demo/assets/bootstrap"}
 	],
-	"paths_to_watch_for_file_changes" : [],
-	"commands" : []
+	"triggers": [
+		{"event":"file_changed", "regex":".*.hx", "command":"haxe", "args":["demo/client.hxml"]}
+	],
+	"paths_to_watch_for_file_changes" : ["demo/src"]
 }

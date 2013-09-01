@@ -602,38 +602,81 @@ catapult.Server.main = function() {
 catapult.Server.fileFilter = function(filePath) {
 	return filePath != null && !(StringTools.startsWith(js.Node.path.basename(filePath),".") || StringTools.endsWith(filePath,"cache"));
 }
+catapult.Server.watchFileSuperReliable = function(filePath,onFileChanged,failureRetryDelayMs) {
+	if(failureRetryDelayMs == null) failureRetryDelayMs = 500;
+	js.Node.fs.exists(filePath,function(exists) {
+		if(exists) {
+			var standardFileModifiedCheck = false;
+			var pollingFileModifiedCheck = false;
+			var options = { persistent : true};
+			var watcher = null;
+			var close = function() {
+				if(watcher != null) {
+					watcher.close();
+					watcher = null;
+				}
+			};
+			watcher = js.Node.fs.watch(filePath,options,function(event,ignored) {
+				if(watcher == null) return;
+				if(event == "rename") {
+					close();
+					if(js.Node.fs.existsSync(filePath)) catapult.Server.watchFileSuperReliable(filePath,onFileChanged); else haxe.Timer.delay((function(f,a1,a2,a3) {
+						return function() {
+							return f(a1,a2,a3);
+						};
+					})(catapult.Server.watchFileSuperReliable,filePath,onFileChanged,failureRetryDelayMs * 2),failureRetryDelayMs);
+				} else if(js.Node.fs.statSync(filePath).size > 0) {
+					onFileChanged(filePath);
+					standardFileModifiedCheck = true;
+					js.Node.fs.watch(filePath,{ persistent : false},function(event1,ignored1) {
+						if(watcher == null) return;
+						pollingFileModifiedCheck = true;
+						haxe.Timer.delay(function() {
+							if(watcher == null) return;
+							if(!(standardFileModifiedCheck && pollingFileModifiedCheck)) {
+								close();
+								onFileChanged(filePath);
+								haxe.Timer.delay((function(f1,a11,a21) {
+									return function() {
+										return f1(a11,a21);
+									};
+								})(catapult.Server.watchFileSuperReliable,filePath,onFileChanged),failureRetryDelayMs);
+							} else {
+								standardFileModifiedCheck = false;
+								pollingFileModifiedCheck = false;
+							}
+						},50);
+					});
+				} else mconsole.Console.info("Ignoring file change event because bytes==0 " + filePath,{ fileName : "Server.hx", lineNumber : 670, className : "catapult.Server", methodName : "watchFileSuperReliable"});
+			});
+			watcher.on("error",function(err) {
+				mconsole.Console.error({ log : "NodeFSWatcher:error, retrying", error : err, path : filePath},null,{ fileName : "Server.hx", lineNumber : 677, className : "catapult.Server", methodName : "watchFileSuperReliable"});
+				close();
+				haxe.Timer.delay((function(f2,a12,a22,a31) {
+					return function() {
+						return f2(a12,a22,a31);
+					};
+				})(catapult.Server.watchFileSuperReliable,filePath,onFileChanged,failureRetryDelayMs * 2),failureRetryDelayMs);
+			});
+		} else {
+			mconsole.Console.warn("Asked to watch but doesn't exist (but retrying): " + filePath,{ fileName : "Server.hx", lineNumber : 682, className : "catapult.Server", methodName : "watchFileSuperReliable"});
+			haxe.Timer.delay((function(f3,a13,a23,a32) {
+				return function() {
+					return f3(a13,a23,a32);
+				};
+			})(catapult.Server.watchFileSuperReliable,filePath,onFileChanged,failureRetryDelayMs * 2),failureRetryDelayMs);
+		}
+	});
+}
 catapult.Server.prototype = {
-	watchFile: function(file,fireChangedEvent,retry,retryCount) {
-		if(retryCount == null) retryCount = 0;
-		if(retry == null) retry = false;
-		if(fireChangedEvent == null) fireChangedEvent = false;
+	watchFile: function(file) {
 		var _g = this;
-		js.Node.fs.exists(file.absolutePath,function(exists) {
-			if(exists) {
-				var options = { persistent : true};
-				var watcher = js.Node.fs.watch(file.absolutePath,options,function(event,ignored) {
-					mconsole.Console.info({ log : "file_changed", event : event, path : file.absolutePath},{ fileName : "Server.hx", lineNumber : 563, className : "catapult.Server", methodName : "watchFile"});
-					if(event == "rename") {
-						mconsole.Console.warn(file.absolutePath + " renamed.",{ fileName : "Server.hx", lineNumber : 565, className : "catapult.Server", methodName : "watchFile"});
-						if(js.Node.fs.existsSync(file.absolutePath)) _g.watchFile(file); else haxe.Timer.delay(function() {
-							_g.watchFile(file,true,true,0);
-						},catapult.Server.RETRY_INTERVAL_MS);
-					} else if(js.Node.fs.statSync(file.absolutePath).size > 0) _g.onFileChanged(file); else {
-					}
-				});
-				file.md5 = sys.FileSystem.signature(file.absolutePath);
-			} else if(retry) {
-				if(retryCount > 100) {
-					if(mconsole.Console.hasConsole) mconsole.Console.callConsole("warn",["Retry count > 100, not retrying anymore"]);
-					mconsole.Console.print(mconsole.LogLevel.warn,["Retry count > 100, not retrying anymore"],{ fileName : "Server.hx", lineNumber : 598, className : "catapult.Server", methodName : "watchFile"});
-				} else haxe.Timer.delay(function() {
-					_g.watchFile(file,fireChangedEvent,retry,retryCount + 1);
-				},catapult.Server.RETRY_INTERVAL_MS);
-			}
+		catapult.Server.watchFileSuperReliable(file.absolutePath,function(_) {
+			_g.onFileChanged(file);
 		});
 	}
 	,setupFileWatching: function(rootPath) {
-		mconsole.Console.info("Watching rootPath: " + rootPath,{ fileName : "Server.hx", lineNumber : 509, className : "catapult.Server", methodName : "setupFileWatching"});
+		mconsole.Console.info("Watching rootPath: " + rootPath,{ fileName : "Server.hx", lineNumber : 541, className : "catapult.Server", methodName : "setupFileWatching"});
 		if(this._files == null) this._files = new haxe.ds.StringMap();
 		if(!(js.Node.fs.existsSync(rootPath) && sys.FileSystem.isDirectory(rootPath))) throw rootPath + " doesn't exist";
 		var baseName = js.Node.path.basename(rootPath);
@@ -655,17 +698,19 @@ catapult.Server.prototype = {
 			this.watchFile(fileBlob);
 			numFilesWatched++;
 		}
-		mconsole.Console.info("Watching " + numFilesWatched + " files in " + rootPath,{ fileName : "Server.hx", lineNumber : 549, className : "catapult.Server", methodName : "setupFileWatching"});
+		mconsole.Console.info("Watching " + numFilesWatched + " files in " + rootPath,{ fileName : "Server.hx", lineNumber : 573, className : "catapult.Server", methodName : "setupFileWatching"});
 	}
 	,onFileChanged: function(file) {
 		var _g = this;
+		mconsole.Console.info({ log : "onFileChanged", file : file},{ fileName : "Server.hx", lineNumber : 448, className : "catapult.Server", methodName : "onFileChanged"});
 		if(file.relativePath == ".catapult") {
 			if(mconsole.Console.hasConsole) mconsole.Console.callConsole("warn",[".catapult changed, reloading config!!"]);
-			mconsole.Console.print(mconsole.LogLevel.warn,[".catapult changed, reloading config!!"],{ fileName : "Server.hx", lineNumber : 423, className : "catapult.Server", methodName : "onFileChanged"});
+			mconsole.Console.print(mconsole.LogLevel.warn,[".catapult changed, reloading config!!"],{ fileName : "Server.hx", lineNumber : 451, className : "catapult.Server", methodName : "onFileChanged"});
 			this.loadConfig();
 			return;
 		}
 		var sendMessageToAllClients = function(msg) {
+			mconsole.Console.info({ log : "Sending", msg : msg},{ fileName : "Server.hx", lineNumber : 457, className : "catapult.Server", methodName : "onFileChanged"});
 			var _g1 = 0;
 			var _g2 = _g._websocketServer.connections;
 			while(_g1 < _g2.length) {
@@ -687,7 +732,7 @@ catapult.Server.prototype = {
 		}
 		if(StringTools.endsWith(file.relativePath,".ods")) {
 			if(mconsole.Console.hasConsole) mconsole.Console.callConsole("info",["LibreOffice spreadsheet changed, sending json data."]);
-			mconsole.Console.print(mconsole.LogLevel.info,["LibreOffice spreadsheet changed, sending json data."],{ fileName : "Server.hx", lineNumber : 456, className : "catapult.Server", methodName : "onFileChanged"});
+			mconsole.Console.print(mconsole.LogLevel.info,["LibreOffice spreadsheet changed, sending json data."],{ fileName : "Server.hx", lineNumber : 485, className : "catapult.Server", methodName : "onFileChanged"});
 			var update = function() {
 				var data = catapult.OdsRuntimeParser.parse(file.absolutePath);
 				var dataMessage = message;
@@ -698,42 +743,51 @@ catapult.Server.prototype = {
 			};
 			if(js.Node.fs.statSync(file.absolutePath).size == 0) js.Node.setTimeout(update,100); else update();
 		}
-		if(this._config.commands != null) {
+		if(this._config.triggers != null) {
+			if(mconsole.Console.hasConsole) mconsole.Console.callConsole("info",["Checking file triggers"]);
+			mconsole.Console.print(mconsole.LogLevel.info,["Checking file triggers"],{ fileName : "Server.hx", lineNumber : 509, className : "catapult.Server", methodName : "onFileChanged"});
 			var _g1 = 0;
-			var _g11 = this._config.commands;
+			var _g11 = this._config.triggers;
 			while(_g1 < _g11.length) {
 				var commandData = _g11[_g1];
 				++_g1;
-				if(StringTools.endsWith(file.relativePath,commandData.suffix)) {
-					var commandProcess = js.Node.childProcess.spawn(commandData.command,commandData.args != null?commandData.args:[]);
-					commandProcess.stdout.on("data",function(data) {
-						mconsole.Console.info("stdout: " + data,{ fileName : "Server.hx", lineNumber : 489, className : "catapult.Server", methodName : "onFileChanged"});
-					});
-					commandProcess.stderr.on("data",function(data) {
-						mconsole.Console.info("stderr: " + data,{ fileName : "Server.hx", lineNumber : 495, className : "catapult.Server", methodName : "onFileChanged"});
-					});
-					commandProcess.on("close",function(code) {
-						mconsole.Console.info("child process exited with code " + code,{ fileName : "Server.hx", lineNumber : 500, className : "catapult.Server", methodName : "onFileChanged"});
-					});
+				if(new EReg(commandData.regex,"").match(file.relativePath)) {
+					mconsole.Console.info("Matches " + commandData.regex,{ fileName : "Server.hx", lineNumber : 512, className : "catapult.Server", methodName : "onFileChanged"});
+					if(commandData.command != null) {
+						var commandProcess = js.Node.childProcess.spawn(commandData.command,commandData.args != null?commandData.args:[]);
+						commandProcess.stdout.on("data",function(data) {
+							mconsole.Console.info("stdout: " + data,{ fileName : "Server.hx", lineNumber : 518, className : "catapult.Server", methodName : "onFileChanged"});
+						});
+						commandProcess.stderr.on("data",function(data) {
+							mconsole.Console.info("stderr: " + data,{ fileName : "Server.hx", lineNumber : 522, className : "catapult.Server", methodName : "onFileChanged"});
+						});
+						commandProcess.on("close",function(code) {
+							mconsole.Console.info("child process exited with code " + code,{ fileName : "Server.hx", lineNumber : 526, className : "catapult.Server", methodName : "onFileChanged"});
+						});
+					}
+					if(commandData.broadcast_event != null) {
+						mconsole.Console.info({ log : "broadcast_event", message : commandData.broadcast_event},{ fileName : "Server.hx", lineNumber : 531, className : "catapult.Server", methodName : "onFileChanged"});
+						sendMessageToAllClients(js.Node.stringify(commandData.broadcast_event,null,"\t"));
+					}
 				}
 			}
 		}
 	}
 	,onWebsocketRequest: function(request) {
-		mconsole.Console.info("request.requestedProtocols: " + Std.string(request.requestedProtocols),{ fileName : "Server.hx", lineNumber : 404, className : "catapult.Server", methodName : "onWebsocketRequest"});
+		mconsole.Console.info("request.requestedProtocols: " + Std.string(request.requestedProtocols),{ fileName : "Server.hx", lineNumber : 431, className : "catapult.Server", methodName : "onWebsocketRequest"});
 		var protocol = null;
 		var connection = request.accept(protocol,request.origin);
 		var onError = function(error) {
-			mconsole.Console.error(" Peer " + connection.remoteAddress + " error: " + error,null,{ fileName : "Server.hx", lineNumber : 409, className : "catapult.Server", methodName : "onWebsocketRequest"});
+			mconsole.Console.error(" Peer " + connection.remoteAddress + " error: " + error,null,{ fileName : "Server.hx", lineNumber : 436, className : "catapult.Server", methodName : "onWebsocketRequest"});
 		};
 		connection.on("error",onError);
 		connection.once("close",function(reasonCode,description) {
-			mconsole.Console.info(Std.string(new Date()) + " client at \"" + connection.remoteAddress + "\" disconnected.",{ fileName : "Server.hx", lineNumber : 414, className : "catapult.Server", methodName : "onWebsocketRequest"});
+			mconsole.Console.info(Std.string(new Date()) + " client at \"" + connection.remoteAddress + "\" disconnected.",{ fileName : "Server.hx", lineNumber : 441, className : "catapult.Server", methodName : "onWebsocketRequest"});
 			connection.removeListener("error",onError);
 		});
 	}
 	,onConnectFailed: function(error) {
-		mconsole.Console.error("WebSocketServer connection failed: " + Std.string(error),null,{ fileName : "Server.hx", lineNumber : 399, className : "catapult.Server", methodName : "onConnectFailed"});
+		mconsole.Console.error("WebSocketServer connection failed: " + Std.string(error),null,{ fileName : "Server.hx", lineNumber : 426, className : "catapult.Server", methodName : "onConnectFailed"});
 	}
 	,serveOds: function(req,res) {
 		if(!StringTools.endsWith(req.url,".ods")) return false;
@@ -742,7 +796,7 @@ catapult.Server.prototype = {
 		var filePath = urlObj.pathname;
 		if(filePath.charAt(0) == "/") filePath = HxOverrides.substr(filePath,1,null);
 		if(!this._files.exists(filePath)) {
-			mconsole.Console.error("Requested " + filePath + ", but no file exists",null,{ fileName : "Server.hx", lineNumber : 380, className : "catapult.Server", methodName : "serveOds"});
+			mconsole.Console.error("Requested " + filePath + ", but no file exists",null,{ fileName : "Server.hx", lineNumber : 407, className : "catapult.Server", methodName : "serveOds"});
 			res.writeHead(404,{ 'Content-Type' : "text/plain"});
 			res.end("Requested " + filePath + ", but no file exists.\n\tAll files:\n\t\t" + Lambda.array({ iterator : (function(_e) {
 				return function() {
@@ -754,7 +808,7 @@ catapult.Server.prototype = {
 		var fileBlob = this._files.get(filePath);
 		var data = catapult.OdsRuntimeParser.parse(fileBlob.absolutePath);
 		res.writeHead(200,{ 'Content-Type' : "application/json"});
-		mconsole.Console.log("Serving : " + js.Node.stringify(data,null,"\t"),{ fileName : "Server.hx", lineNumber : 391, className : "catapult.Server", methodName : "serveOds"});
+		mconsole.Console.log("Serving : " + js.Node.stringify(data,null,"\t"),{ fileName : "Server.hx", lineNumber : 418, className : "catapult.Server", methodName : "serveOds"});
 		res.end(js.Node.stringify(data,null,"\t"));
 		return true;
 	}
@@ -769,13 +823,13 @@ catapult.Server.prototype = {
 			result.manifests[manifestKey] = manifest;
 		}
 		res.writeHead(200,{ 'Content-Type' : "application/json"});
-		mconsole.Console.log("Manifests: " + js.Node.stringify(result,null,"\t"),{ fileName : "Server.hx", lineNumber : 359, className : "catapult.Server", methodName : "serveManifests"});
+		mconsole.Console.log("Manifests: " + js.Node.stringify(result,null,"\t"),{ fileName : "Server.hx", lineNumber : 386, className : "catapult.Server", methodName : "serveManifests"});
 		res.end(js.Node.stringify(result,null,"\t"));
 		return true;
 	}
 	,getServedManifest: function(manifestKey) {
 		if(!this._manifests.exists(manifestKey)) {
-			mconsole.Console.error("No manifest for key=" + manifestKey,null,{ fileName : "Server.hx", lineNumber : 321, className : "catapult.Server", methodName : "getServedManifest"});
+			mconsole.Console.error("No manifest for key=" + manifestKey,null,{ fileName : "Server.hx", lineNumber : 348, className : "catapult.Server", methodName : "getServedManifest"});
 			return null;
 		}
 		var files = new Array();
@@ -835,7 +889,7 @@ catapult.Server.prototype = {
 			var manifest = this._manifests.get(fileBlob.manifestKey);
 			var serverKey = manifest.id;
 			var staticServer = this._servedFolders.get(serverKey);
-			mconsole.Console.assert(staticServer != null,{ message : "staticServer != null", urlObj : urlObj, fileBlob : fileBlob, manifest : manifest, _servedFolders : this._servedFolders},{ fileName : "Server.hx", lineNumber : 234, className : "catapult.Server", methodName : "serveFile"});
+			mconsole.Console.assert(staticServer != null,{ message : "staticServer != null", urlObj : urlObj, fileBlob : fileBlob, manifest : manifest, _servedFolders : this._servedFolders},{ fileName : "Server.hx", lineNumber : 274, className : "catapult.Server", methodName : "serveFile"});
 			var tokens = urlObj.pathname.split(js.Node.path.sep).filter(function(s) {
 				return s != null && s.length > 0;
 			});
@@ -843,24 +897,24 @@ catapult.Server.prototype = {
 			var absoluteFilePath = js.Node.path.join(staticServer.root,fileBlob.relativePath);
 			js.Node.fs.exists(absoluteFilePath,function(exists) {
 				if(exists) {
-					mconsole.Console.info("Served: " + absoluteFilePath,{ fileName : "Server.hx", lineNumber : 245, className : "catapult.Server", methodName : "serveFile"});
+					mconsole.Console.info("Served: " + absoluteFilePath,{ fileName : "Server.hx", lineNumber : 283, className : "catapult.Server", methodName : "serveFile"});
 					staticServer.serveFile(fileBlob.relativePath,200,null,req,res);
 				} else {
-					mconsole.Console.warn(absoluteFilePath + " not found.",{ fileName : "Server.hx", lineNumber : 250, className : "catapult.Server", methodName : "serveFile"});
+					mconsole.Console.warn(absoluteFilePath + " not found.",{ fileName : "Server.hx", lineNumber : 286, className : "catapult.Server", methodName : "serveFile"});
 					res.writeHead(404);
 					res.end();
 				}
 			});
 		} else if(fileKey == "" || fileKey == "/") {
 			if(mconsole.Console.hasConsole) mconsole.Console.callConsole("info",["Defaulting to index.html"]);
-			mconsole.Console.print(mconsole.LogLevel.info,["Defaulting to index.html"],{ fileName : "Server.hx", lineNumber : 261, className : "catapult.Server", methodName : "serveFile"});
+			mconsole.Console.print(mconsole.LogLevel.info,["Defaulting to index.html"],{ fileName : "Server.hx", lineNumber : 294, className : "catapult.Server", methodName : "serveFile"});
 			this._defaultStaticServer.serveFile("/index.html",200,{ },req,res);
 		} else this._defaultStaticServer.serve(req,res,function(err,result) {
 			if(err) {
 				if(mconsole.Console.hasConsole) mconsole.Console.callConsole("warn",[err]);
-				mconsole.Console.print(mconsole.LogLevel.warn,[err],{ fileName : "Server.hx", lineNumber : 269, className : "catapult.Server", methodName : "serveFile"});
-				mconsole.Console.info(Std.string(urlObj) + "",{ fileName : "Server.hx", lineNumber : 270, className : "catapult.Server", methodName : "serveFile"});
-				mconsole.Console.info(Std.string(new Date()) + " Received request for " + req.url,{ fileName : "Server.hx", lineNumber : 271, className : "catapult.Server", methodName : "serveFile"});
+				mconsole.Console.print(mconsole.LogLevel.warn,[err],{ fileName : "Server.hx", lineNumber : 299, className : "catapult.Server", methodName : "serveFile"});
+				mconsole.Console.info(Std.string(urlObj) + "",{ fileName : "Server.hx", lineNumber : 300, className : "catapult.Server", methodName : "serveFile"});
+				mconsole.Console.info(Std.string(new Date()) + " Received request for " + req.url,{ fileName : "Server.hx", lineNumber : 301, className : "catapult.Server", methodName : "serveFile"});
 				res.writeHead(404,{ 'Content-Type' : "text/plain"});
 				var manifestKeys = Lambda.array({ iterator : (function(_e) {
 					return function() {
@@ -878,7 +932,7 @@ catapult.Server.prototype = {
 						return _e1.keys();
 					};
 				})(_g._servedFolders)}).join(", ") + "]");
-			} else mconsole.Console.info("Served: " + _g._defaultStaticServer.root + urlObj.pathname,{ fileName : "Server.hx", lineNumber : 283, className : "catapult.Server", methodName : "serveFile"});
+			} else mconsole.Console.info("Served: " + _g._defaultStaticServer.root + urlObj.pathname,{ fileName : "Server.hx", lineNumber : 310, className : "catapult.Server", methodName : "serveFile"});
 		});
 		return true;
 	}
@@ -896,32 +950,46 @@ catapult.Server.prototype = {
 	,init: function() {
 		var _g = this;
 		var program = js.Node.require("commander");
-		program.version("Blink Asset Server 0.1.  Serving up flaming hot assets since 1903.\n Run in the root of your game project.").option("-c, --config <config>","Use a non-default config file (defaults to \".catapult\") ",String,".catapult").parse(js.Node.process.argv);
+		program.version("Catapult Asset Server 0.2.  Serving up flaming hot assets since 1903.").option("-c, --config <config>","Use a non-default config file (defaults to \".catapult\") ",String,".catapult");
+		program.command("serve").description("Starts the file asset server").action(function(env) {
+			_g._configPath = program.config;
+			if(js.Node.fs.existsSync(js.Node.process.argv[js.Node.process.argv.length - 1])) _g._configPath = js.Node.process.argv[js.Node.process.argv.length - 1];
+			mconsole.Console.info("Config path=" + _g._configPath,{ fileName : "Server.hx", lineNumber : 204, className : "catapult.Server", methodName : "init"});
+			if(_g.loadConfig()) _g.watchFile({ md5 : "", bytes : 0, relativePath : _g._configPath, absolutePath : _g._configPath, manifestKey : ""});
+		});
 		program.command("init").description("Creates a blank .catapult config file").action(function(env) {
 			_g.createBlankCatapultFile();
 			if(mconsole.Console.hasConsole) mconsole.Console.callConsole("info",["Created config file .catapult"]);
-			mconsole.Console.print(mconsole.LogLevel.info,["Created config file .catapult"],{ fileName : "Server.hx", lineNumber : 182, className : "catapult.Server", methodName : "init"});
+			mconsole.Console.print(mconsole.LogLevel.info,["Created config file .catapult"],{ fileName : "Server.hx", lineNumber : 215, className : "catapult.Server", methodName : "init"});
 		});
-		this._configPath = program.config;
-		mconsole.Console.info("Config path=" + this._configPath,{ fileName : "Server.hx", lineNumber : 187, className : "catapult.Server", methodName : "init"});
-		this.loadConfig();
-		this.watchFile({ md5 : "", bytes : 0, relativePath : this._configPath, absolutePath : this._configPath, manifestKey : ""});
+		if(js.Node.process.argv.length == 2) js.Node.process.argv.push("--help");
+		if(js.Node.fs.existsSync(js.Node.process.argv[js.Node.process.argv.length - 1])) {
+			this._configPath = js.Node.process.argv[js.Node.process.argv.length - 1];
+			mconsole.Console.info("Config path=" + this._configPath,{ fileName : "Server.hx", lineNumber : 224, className : "catapult.Server", methodName : "init"});
+			if(this.loadConfig()) this.watchFile({ md5 : "", bytes : 0, relativePath : this._configPath, absolutePath : this._configPath, manifestKey : ""});
+		} else program.parse(js.Node.process.argv);
 	}
 	,loadConfig: function() {
 		var _g = this;
+		if(this._configPath == null) {
+			mconsole.Console.error({ log : "Could not parse json config file=null"},null,{ fileName : "Server.hx", lineNumber : 115, className : "catapult.Server", methodName : "loadConfig"});
+			return false;
+		}
 		if(js.Node.fs.existsSync(this._configPath)) {
 			var content = sys.io.File.getContent(this._configPath);
 			try {
 				this._config = js.Node.parse(content);
 			} catch( e ) {
-				mconsole.Console.error({ log : "Could not parse json config file=" + this._configPath, err : e, content : content},null,{ fileName : "Server.hx", lineNumber : 110, className : "catapult.Server", methodName : "loadConfig"});
+				mconsole.Console.error({ log : "Could not parse json config file=" + this._configPath, err : e, content : content},null,{ fileName : "Server.hx", lineNumber : 125, className : "catapult.Server", methodName : "loadConfig"});
 				js.Node.process.exit(1);
+				return false;
 			}
 		} else {
-			mconsole.Console.warn("No catapult config file detected at " + this._configPath,{ fileName : "Server.hx", lineNumber : 116, className : "catapult.Server", methodName : "loadConfig"});
-			if(mconsole.Console.hasConsole) mconsole.Console.callConsole("warn",["Please run node catapult.js init"]);
-			mconsole.Console.print(mconsole.LogLevel.warn,["Please run node catapult.js init"],{ fileName : "Server.hx", lineNumber : 117, className : "catapult.Server", methodName : "loadConfig"});
+			mconsole.Console.warn("No catapult config file detected at " + this._configPath,{ fileName : "Server.hx", lineNumber : 132, className : "catapult.Server", methodName : "loadConfig"});
+			if(mconsole.Console.hasConsole) mconsole.Console.callConsole("warn",["Please run catapult init"]);
+			mconsole.Console.print(mconsole.LogLevel.warn,["Please run catapult init"],{ fileName : "Server.hx", lineNumber : 133, className : "catapult.Server", methodName : "loadConfig"});
 			js.Node.process.exit(1);
+			return false;
 		}
 		this._servedFolders = new haxe.ds.StringMap();
 		var manifests;
@@ -932,7 +1000,7 @@ catapult.Server.prototype = {
 				var manifest = manifests[_g1];
 				++_g1;
 				var staticServer = js.node.NodeStatic.Server(manifest.path);
-				mconsole.Console.assert(staticServer != null,"staticServer != null",{ fileName : "Server.hx", lineNumber : 127, className : "catapult.Server", methodName : "loadConfig"});
+				mconsole.Console.assert(staticServer != null,"staticServer != null",{ fileName : "Server.hx", lineNumber : 144, className : "catapult.Server", methodName : "loadConfig"});
 				this._servedFolders.set(manifest.id,staticServer);
 				this.setupFileWatching(manifest.path);
 			}
@@ -947,12 +1015,12 @@ catapult.Server.prototype = {
 			}
 		}
 		this._defaultStaticServer = js.node.NodeStatic.Server(this._config.file_server_path);
-		mconsole.Console.info("Serving static files from " + this._config.file_server_path,{ fileName : "Server.hx", lineNumber : 142, className : "catapult.Server", methodName : "loadConfig"});
+		mconsole.Console.info("Serving static files from " + this._config.file_server_path,{ fileName : "Server.hx", lineNumber : 159, className : "catapult.Server", methodName : "loadConfig"});
 		if(this._httpServer == null) {
 			var http = js.Node.http;
 			this._httpServer = http.createServer($bind(this,this.onHttpRequest));
 			this._httpServer.listen(this._config.port,this._config.address,function() {
-				mconsole.Console.info(Std.string(new Date()) + " Blink server available at:\n    [http://" + _g._config.address + ":" + _g._config.port + "]\n    [ws://" + _g._config.address + ":" + _g._config.port + "]",{ fileName : "Server.hx", lineNumber : 152, className : "catapult.Server", methodName : "loadConfig"});
+				mconsole.Console.info(Std.string(new Date()) + " Catapult server available at:\n    [http://" + _g._config.address + ":" + _g._config.port + "]\n    [ws://" + _g._config.address + ":" + _g._config.port + "]",{ fileName : "Server.hx", lineNumber : 169, className : "catapult.Server", methodName : "loadConfig"});
 			});
 		}
 		if(this._websocketServer == null) {
@@ -963,9 +1031,14 @@ catapult.Server.prototype = {
 			this._websocketServer.on("request",$bind(this,this.onWebsocketRequest));
 			this._websocketServer.mount(serverConfig);
 		}
+		return true;
 	}
 	,createBlankCatapultFile: function() {
-		sys.io.File.saveContent(".catapult","{\n\t\n\t\t\t\"file_server\":\"deploy/web/targets\",\n\t\t\t\"manifests\" : [\n\t\t\t\t{\"name\" : \"bootstrap\", \"path\" : \"demo/assets/bootstrap\"}\n\t\t\t],\n\t\t\t\"paths_to_watch_for_file_changes\" : [\n\t\t\t\t\"src\",\n\t\t\t\t\"deploy/web\"\n\t\t\t],\n\t\t\t\"commands\" : [\n\t\t\t\t{\n\t\t\t\t\t\"suffix\" : \".hx\",\n\t\t\t\t\t\"command\": \"haxe\",\n\t\t\t\t\t\"args\":[\"demo/client.hxml\"]\n\t\t\t\t}\n\t\t\t]\n\t\t}");
+		if(js.Node.fs.existsSync(".catapult")) {
+			mconsole.Console.error("'.catapult' file already exists.",null,{ fileName : "Server.hx", lineNumber : 83, className : "catapult.Server", methodName : "createBlankCatapultFile"});
+			return;
+		}
+		sys.io.File.saveContent(".catapult","{\n\t\n\t\t\t\"port\":8000,\n\t\t\t\"address\":\"localhost\",\n\t\t\t\"file_server\":\"deploy/web/targets\",\n\t\t\t\"manifests\" : [\n\t\t\t\t{\"name\" : \"bootstrap\", \"path\" : \"demo/assets/bootstrap\"}\n\t\t\t],\n\t\t\t\"paths_to_watch_for_file_changes\" : [\n\t\t\t\t\"src\",\n\t\t\t\t\"deploy/web\"\n\t\t\t],\n\t\t\t\"triggers\" : [\n\t\t\t\t{\n\t\t\t\t\t\"regex\" : \".*hx\",\n\t\t\t\t\t\"command\": \"haxe\",\n\t\t\t\t\t\"args\":[\"demo/client.hxml\"]\n\t\t\t\t},\n\t\t\t\t{\n\t\t\t\t\t\"regex\" : \".*.js\",\n\t\t\t\t\t\"broadcast_event\":{\"type\":\"reload\"}\n\t\t\t\t}\n\t\t\t]\n\t\t}");
 	}
 	,__class__: catapult.Server
 }
