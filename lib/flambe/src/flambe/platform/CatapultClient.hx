@@ -10,25 +10,21 @@ import flambe.util.Assert;
 
 using StringTools;
 
-/** Overrides the actual Flambe version for now. */
+/** Handles communication with the Catapult server run by `flambe serve`, for live reloading. */
 class CatapultClient
 {
-    public var messageSignal (default, null):flambe.util.Signal1<Dynamic>;
-
     private function new ()
     {
         _loaders = [];
-        messageSignal = new flambe.util.Signal1<Dynamic>();
     }
 
     public function add (loader :BasicAssetPackLoader)
     {
 #if !flambe_disable_reloading
         // Only care about packs loaded from the assets directory
-        // if (loader.manifest.relativeBasePath == "assets") {
-        //     _loaders.push(loader);
-        // }
-        _loaders.push(loader);
+        if (loader.manifest.relativeBasePath == "assets") {
+            _loaders.push(loader);
+        }
 #end
     }
 
@@ -44,16 +40,12 @@ class CatapultClient
 
     private function onMessage (message :String)
     {
-        // Log.info("onMessage on new CatapultClient " + message);
         var message = Json.parse(message);
-        messageSignal.emit(message);//Emit this first, before e.g. reloading
         switch (message.type) {
         case "file_changed":
-            trace("Since file_changed reload from loaders");
             var url = message.name + "?v=" + message.md5;
             url = url.replace("\\", "/"); // Handle backslash paths in Windows
             for (loader in _loaders) {
-                trace("reloading " + url);
                 loader.reload(url);
             }
         case "restart":

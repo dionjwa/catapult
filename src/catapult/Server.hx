@@ -1,31 +1,37 @@
 package catapult;
 
 import haxe.Json;
+import haxe.remoting.JsonRPC;
+
+import catapult.Catapult;
 
 import js.Node;
-import js.node.WebSocketNode;
+import js.node.WebSocketServer;
 import js.node.NodeStatic;
 import mconsole.Console;
 
 import sys.FileSystem;
 import sys.io.File;
 
-import catapult.Catapult;
-
 using StringTools;
 using Lambda;
 
 /** When a file of this type is modified, execute the corresponding command */
 typedef ManifestBlob = {
-	var id :String;
+	var name :String;
 	var path :String;
+}
+
+typedef Command = {
+	@:optional var command :String;
+	@:optional var args :Array<String>;
 }
 
 /** When a file of this type is modified, execute the corresponding command */
 typedef Trigger = {
 	var regex :String;
-	@:optional var command :String;
-	@:optional var args :Array<String>;
+	@:optional var disabled :Bool;
+	@:optional var commands :Array<Command>;
 	@:optional var broadcast_event :Dynamic;
 	@:optional var on_success_event :Dynamic;
 }
@@ -39,9 +45,9 @@ typedef Config = {
 	@:optional var manifests :Array<ManifestBlob>;
 }
 
-class Server 
+class Server
 {
-	var _websocketServer :WebSocketServer;
+	var _websocketServers :Array<WebSocketServer>;
 	var _files :Map<String, WatchedFile>; //<filePath, WatchedFile>
 	var _manifests :Map<String, ManifestData>; //<manifestBaseFolderName, ManifestData>
 	var _servedFolders :Map<String, StaticServer>;
@@ -49,10 +55,11 @@ class Server
 	var _port :Int;
 	var _config :Config;
 	var _configPath :String;
-	var _httpServer :NodeHttpServer;
-	
+	// var _httpServer :NodeHttpServer;
+	var _currentActiveTriggers :Map<String, Bool>;
+
 	static var RETRY_INTERVAL_MS :Int = 50;
-	
+
 	public static function getLocalIp () :String
 	{
 		var en1 :Array<NodeNetworkInterface> = Node.os.networkInterfaces().en1;
@@ -65,27 +72,30 @@ class Server
 		}
 		return "127.0.0.1";
 	}
-	
+
 	public static function main () :Void
 	{
+#if mconsole
 		Console.start();
+#end
 		new Server();
 	}
-	
+
 	public function new ()
 	{
 		_manifests = new Map();
+		_currentActiveTriggers = new Map();
 		init();
 	}
-	
+
 	function createBlankCatapultFile() :Void
 	{
-		if (FileSystem.exists(".catapult")){
-			Console.error("'.catapult' file already exists.");
+		if (FileSystem.exists("catapult.json")){
+			Console.error("'catapult.json' file already exists.");
 			return;
 		}
-		File.saveContent(".catapult", '{
-	
+		File.saveContent("catapult.json", '{
+
 			"port":8000,
 			"address":"localhost",
 			"file_server":"deploy/web/targets",
@@ -111,15 +121,26 @@ class Server
 			]
 		}');
 	}
-	
+
+	function defaultConfig()
+	{
+		_config = DEFAULT_CONFIG;
+		var files = FileSystem.readDirectory("./");
+		for (file in files) {
+			if (FileSystem.isDirectory(file)) {
+				_config.manifests.push({"name":file, "path":file});
+			}
+		}
+		beginServer();
+	}
+
 	function loadConfig() :Bool
 	{
 		if (_configPath == null) {
 			Console.error({log:"Could not parse json config file=null"});
 			return false;
 		}
-		if (FileSystem.exists(_configPath))
-		{
+		if (FileSystem.exists(_configPath)) {
 			var content = File.getContent(_configPath);
 			try {
 				_config = Json.parse(content);
@@ -129,15 +150,20 @@ class Server
 				Node.process.exit(1);
 				return false;
 			}
-		} 
-		else
-		{
+		} else {
 			Console.warn("No catapult config file detected at " + _configPath);
 			Console.warn("Please run catapult init");
 			Node.process.exit(1);
 			return false;
 		}
-		
+
+		beginServer();
+		return true;
+	}
+
+	function beginServer ()
+	{
+
 		//Static file server on the directories from the 'watch' option
 		_servedFolders = new Map();
 		var manifests :Array<ManifestBlob> = Reflect.hasField(_config, "manifests") ? _config.manifests : [];
@@ -145,11 +171,11 @@ class Server
 			for (manifest in manifests) {
 				var staticServer = NodeStatic.Server(manifest.path);
 				Console.assert(staticServer != null, "staticServer != null");
-				_servedFolders.set(manifest.id, staticServer);
+				_servedFolders.set(manifest.name, staticServer);
 				setupFileWatching(manifest.path);
 			}
 		}
-		
+
 		if (Reflect.hasField(_config, "paths_to_watch_for_file_changes"))
 		{
 			for (path in _config.paths_to_watch_for_file_changes)
@@ -157,115 +183,175 @@ class Server
 				setupFileWatching(path);
 			}
 		}
-		
-		_defaultStaticServer = NodeStatic.Server(_config.file_server_path);
-		Console.info("Serving static files from " + _config.file_server_path);
-	
-		if (_httpServer == null)
+
+		if (_config.file_server_path != null) {
+			_defaultStaticServer = NodeStatic.Server(_config.file_server_path);
+			Console.info("Serving static files from " + _config.file_server_path);
+		}
+
+		var httpServers = [];
+		if (_websocketServers == null)
 		{
+			_websocketServers = [];
 			//Create the http server
 			var http = Node.http;
-			_httpServer = http.createServer(onHttpRequest);
-			// _config.port = program.port;
-	
-			_httpServer.listen(_config.port, _config.address, function() {
-				Console.info(Date.now() + ' Catapult server available at:\n    [http://' + _config.address + ':' + _config.port + ']\n    [ws://' + _config.address + ':' + _config.port + ']');
-			});
+
+
+			var onReady = function() {
+				var urlString = Date.now() + ' Catapult server available at:\n    [ws://' + _config.address + ':' + _config.port + ']\n    [ws://' + _config.address + ':' + (_config.port + 1) + ']';
+				urlString += '\nUrls:\n    http://' + _config.address + ':' + _config.port + '/manifests.json';
+				if (manifests != null) {
+					for (manifest in manifests) {
+						urlString += '\n    http://' + _config.address + ':' + _config.port + '/' + manifest.path + '/manifest.json';
+					}
+				}
+				Console.info(urlString);
+			}
+
+
+			httpServers.push(http.createServer(onHttpRequest));
+			httpServers.push(http.createServer(onHttpRequest));
+			httpServers[0].listen(_config.port, _config.address, onReady);
+			// httpServers[1].listen(_config.port + 1, _config.address);
+			// _httpServer.listen(_config.port, _config.address, onReady);
+
+			_websocketServers = [];
+			var serverConfig1 :WebSocketServerConfig = {httpServer:httpServers[0], autoAcceptConnections:false};
+			// var serverConfig2 :WebSocketServerConfig = {httpServer:httpServers[0], autoAcceptConnections:false};
+
+			var websocketServer1 = new WebSocketServer();
+			websocketServer1.on('connectFailed', onConnectFailed);
+			websocketServer1.on('request', onWebsocketRequest);
+			websocketServer1.on('message', onWebsocketMessage);
+			websocketServer1.mount(serverConfig1);
+			_websocketServers.push(websocketServer1);
+
+			// var websocketServer2 = new WebSocketServer();
+			// websocketServer2.on('connectFailed', onConnectFailed);
+			// websocketServer2.on('request', onWebsocketRequest);
+			// websocketServer2.mount(serverConfig2);
+			// _websocketServers.push(websocketServer2);
 		}
-		
-		if (_websocketServer == null)
-		{
-			var WebSocketServer = Node.require('websocket').server;
-			var serverConfig :WebSocketServerConfig = {httpServer:_httpServer, autoAcceptConnections:false};
-			_websocketServer = untyped __js__("new WebSocketServer()");
-			_websocketServer.on('connectFailed', onConnectFailed);
-			_websocketServer.on('request', onWebsocketRequest);
-			_websocketServer.mount(serverConfig);
-		}
+
+		// if (_websocketServer == null)
+		// {
+		// 	var serverConfig :WebSocketServerConfig = {httpServer:_httpServer, autoAcceptConnections:false};
+		// 	_websocketServer = new WebSocketServer();
+		// 	_websocketServer.on('connectFailed', onConnectFailed);
+		// 	_websocketServer.on('request', onWebsocketRequest);
+		// 	_websocketServer.mount(serverConfig);
+		// }
 		return true;
 	}
-	
+
 	function init () :Void
 	{
 		//Process the command line args
 		//https://github.com/visionmedia/commander.js
-		var program :Dynamic = Node.require('commander');
-		program
-			.version('Catapult Asset Server 0.2.  Serving up flaming hot assets since 1903.')
-			.option('-c, --config <config>', 'Use a non-default config file (defaults to ".catapult") ', untyped String, ".catapult");
-			
-		program
-			.command('serve')
-			.description('Starts the file asset server')
-			.action(function(env) {
-				_configPath = program.config;
+		try {
+			var program :Dynamic = Node.require('commander');
+			program
+				.version('Catapult Asset Server 0.2.  Serving up flaming hot assets since 1903.')
+				.option('-c, --config <config>', 'Use a non-default config file (defaults to "catapult.json") ', untyped String, "catapult.json")
+				.option('-l, --legacy', 'Legacy mode.  Send deprecated non-JSON-RPC messages.');
 
-				if (FileSystem.exists(Node.process.argv[Node.process.argv.length - 1])) {
-					_configPath = Node.process.argv[Node.process.argv.length - 1];
-				}
+			program
+				.command('serve')
+				.description('Starts the file asset server')
+				.action(function(env) {
+					_configPath = program.config;
 
-				Console.info("Config path=" + _configPath);
-				if (loadConfig()) {
-					watchFile({md5:"", bytes:0, relativePath:_configPath, absolutePath:_configPath, manifestKey:""});
-				}
-			});
+					if (FileSystem.exists(Node.process.argv[Node.process.argv.length - 1])) {
+						_configPath = Node.process.argv[Node.process.argv.length - 1];
+					}
 
-		program
-			.command('init')
-			.description('Creates a blank .catapult config file')
-			.action(function(env) {
-				createBlankCatapultFile();
-				Console.info('Created config file .catapult');
-			});
+					Console.info("Config path=" + _configPath);
+					if (loadConfig()) {
+						watchFile({md5:"", bytes:0, relativePath:_configPath, absolutePath:_configPath, manifestKey:""});
+					}
+				});
 
-		if (Node.process.argv.length == 2) {
-			Node.process.argv.push("--help");
-		}
+			program
+				.command('init')
+				.description('Creates a blank catapult.json config file')
+				.action(function(env) {
+					createBlankCatapultFile();
+					Console.info('Created config file catapult.json');
+				});
 
-		if (FileSystem.exists(Node.process.argv[Node.process.argv.length - 1])) {
-			_configPath = Node.process.argv[Node.process.argv.length - 1];
+			// if (Node.process.argv.length == 2) {
+			// 	Node.process.argv.push("--help");
+			// }
+
+			// if (FileSystem.exists(Node.process.argv[Node.process.argv.length - 1])) {
+			// 	_configPath = Node.process.argv[Node.process.argv.length - 1];
+			// 	Console.info("Config path=" + _configPath);
+			// 	if (loadConfig()) {
+			// 		watchFile({md5:"", bytes:0, relativePath:_configPath, absolutePath:_configPath, manifestKey:""});
+			// 	}
+			// } else {
+			// 	program.parse(Node.process.argv);
+			// }
+			program.parse(Node.process.argv);
+
+			_configPath = program.config;
+
+			if (FileSystem.exists(_configPath)) {
+				loadConfig();
+			} else {
+				defaultConfig();
+			}
+
+			// if (FileSystem.exists(Node.process.argv[Node.process.argv.length - 1])) {
+			// 	_configPath = Node.process.argv[Node.process.argv.length - 1];
+			// }
+
+			// Console.info("Config path=" + _configPath);
+			// if (loadConfig()) {
+			// 	watchFile({md5:"", bytes:0, relativePath:_configPath, absolutePath:_configPath, manifestKey:""});
+			// }
+		} catch (e :Dynamic) {
+			_configPath = "catapult.json";
 			Console.info("Config path=" + _configPath);
 			if (loadConfig()) {
 				watchFile({md5:"", bytes:0, relativePath:_configPath, absolutePath:_configPath, manifestKey:""});
 			}
-		} else {
-			program.parse(Node.process.argv);	
 		}
 	}
-	
+
 	function onHttpRequest (req :NodeHttpServerReq, res :NodeHttpServerResp) :Void
 	{
-		if (req.url == "/favicon.ico") {
+		var queryString = Node.url.parse(req.url);
+		Console.info(queryString);
+
+		if (queryString.pathname == "/favicon.ico") {
 			res.writeHead(404);
 			res.end();
 			return;
 		}
-		
+
 		if (serveManifest(req, res)) {
 			return;
 		}
-		
+
 		if (serveManifests(req, res)) {
 			return;
 		}
-		
-		if (serveOds(req, res)) {
-			return;
-		}
-		
+
 		//Default
 		serveFile(req, res);
 	}
-	
+
 	function serveFile(req :NodeHttpServerReq, res :NodeHttpServerResp) :Bool
 	{
 		//Serve the file request
 		var urlObj = Node.url.parse(req.url, true);
 		var firstPathToken = urlObj.pathname.substr(1).split("/")[0];
-		
+
 		var fileKey = urlObj.pathname.substr(1);
-		// Console.log("fileKey: " + fileKey + ", _files.exists(fileKey)=" + _files.exists(fileKey));
-		
+		Console.log("fileKey: " + fileKey + ", _files.exists(fileKey)=" + _files.exists(fileKey));
+
+
 		if (_files.exists(fileKey)) {
 			var fileBlob = _files[fileKey];
 			// Console.log({fileBlob:fileBlob});
@@ -274,90 +360,131 @@ class Server
 			var serverKey = manifest.id;//Node.path.dirname(
 			// Console.log({serverKey:serverKey});
 			var staticServer :StaticServer = _servedFolders.get(serverKey);
-			Console.assert(staticServer != null, {message:"staticServer != null", urlObj:urlObj, fileBlob:fileBlob, manifest:manifest, _servedFolders:_servedFolders});
-			
+			Console.assert(staticServer != null, {message:"staticServer == null", urlObj:urlObj, fileBlob:fileBlob, manifest:manifest, _servedFolders:_servedFolders});
+
 			var tokens = urlObj.pathname.split(Node.path.sep).filter(function(s :String) return s != null && s.length > 0);
 			var filePath = tokens.join(Node.path.sep);
-			
+
 			var absoluteFilePath = Node.path.join(staticServer.root, fileBlob.relativePath);
-			
+
 			Node.fs.exists(absoluteFilePath, function(exists :Bool) :Void {
 				if (exists) {
-					Console.info("Served: " + absoluteFilePath);
-					staticServer.serveFile(fileBlob.relativePath, 200, null, req, res);
+					Console.info('Serving: $absoluteFilePath from ${fileBlob.relativePath} filePath=${filePath}');
+					Console.info(staticServer);
+					staticServer.serveFile(fileBlob.relativePath, 200, {}, req, res);
+					// staticServer.serveFile(fileKey, 200, null, req, res);
+					Console.log("served");
+
+					// staticServer.serve(req, res, function(err, result)  {
+					// 	if (err) {
+					// 		Console.warn(urlObj.pathname + ", err=" + Json.stringify(err));
+					// 		Console.info(urlObj + "");
+					// 		Console.info(Date.now() + ' Received request for ' + req.url);
+
+					// 		res.writeHead(404, { 'Content-Type': 'text/plain' });
+					// 		var manifestKeys = {iterator:_manifests.keys}.array();
+					// 		for (i in 0...manifestKeys.length) {
+					// 			manifestKeys[i] = "http://<host>:" + _config.port +  "/" + manifestKeys[i] + "/manifest.json";
+					// 		}
+					// 		res.end("No manifest at that path found (firstPathToken=" + firstPathToken + "), possible served folders are [" + {iterator:_servedFolders.keys}.array().join(", ") + "]");
+					// 	} else {
+					// 		Console.info('Served: $absoluteFilePath from ${fileBlob.relativePath}');
+					// 	}
+					// });
+
+
+
 				} else {
 					Console.warn(absoluteFilePath + " not found.");
 					res.writeHead(404);
+					res.write("<!DOCTYPE html><html><body><h1>404 File not found</h1></body></html>");
 					res.end();
 				}
 			});
-		} else {
+		} else if (_defaultStaticServer != null){
 			if (fileKey == "" || fileKey == "/") {
 				//change to index.html
 				Console.info("Defaulting to index.html");
-				_defaultStaticServer.serveFile('/index.html', 200, {}, req, res);
+				var indexPath = Node.path.join(_config.file_server_path, "index.html");
+				Node.fs.exists(indexPath,
+					function(exists) {
+						if (exists) {
+							_defaultStaticServer.serveFile('/index.html', 200, {}, req, res);
+						} else {
+							Console.warn(indexPath + " not found.");
+							res.writeHead(404);
+							res.write("<!DOCTYPE html><html><body><h1>404 File not found</h1></body></html>");
+							res.end();
+						}
+					});
 			} else {
 				_defaultStaticServer.serve(req, res, function(err, result)  {
 					if (err) {
-						Console.warn(err);
+						Console.warn(urlObj.pathname + ", err=" + err);
 						Console.info(urlObj + "");
 						Console.info(Date.now() + ' Received request for ' + req.url);
-						
+
 						res.writeHead(404, { 'Content-Type': 'text/plain' });
-						var manifestKeys = {iterator:_manifests.keys}.array();
+						var manifestKeys = getManifestKeys();
 						for (i in 0...manifestKeys.length) {
 							manifestKeys[i] = "http://<host>:" + _config.port +  "/" + manifestKeys[i] + "/manifest.json";
 						}
-						res.end("No manifest at that path found (firstPathToken=" + firstPathToken + "), possible served folders are [" + {iterator:_servedFolders.keys}.array().join(", ") + "]");
+						res.end("No manifest at that path found (firstPathToken=" + firstPathToken + "), possible served folders are [" + getManifestKeys().join(", ") + "]");
 					} else {
 						Console.info("Served: " + _defaultStaticServer.root + urlObj.pathname);
 					}
 				});
 			}
+		} else {
+			Console.error('No manifest file found and no _defaultStaticServer');
+			res.writeHead(404);
+			res.write("<!DOCTYPE html><html><body><h1>404 File not found</h1></body></html>");
+			res.end();
 		}
 		return true;
 	}
-	
+
 	function serveManifest(req :NodeHttpServerReq, res :NodeHttpServerResp) :Bool
 	{
-		if (!req.url.endsWith("/manifest.json")) {
+		var queryString = Node.url.parse(req.url);
+		if (!queryString.pathname.endsWith("/manifest.json")) {
 			return false;
 		}
-		
-		var pathToken = req.url.replace("manifest.json", "");
+
+		var pathToken = queryString.pathname.replace("manifest.json", "");
 		pathToken = pathToken.replace("/", "");
-		
+
 		if (!_manifests.exists(pathToken)) {
 			res.writeHead(404, { 'Content-Type': 'text/plain' });
-			var manifestKeys = {iterator:_manifests.keys}.array();
+			var manifestKeys = getManifestKeys();
 			for (i in 0...manifestKeys.length) {
 				manifestKeys[i] = "http://<host>:" + _config.port +  "/" + manifestKeys[i] + "/manifest.json";
 			}
 			res.end("No manifest at that path found, possible manifests are [" + manifestKeys.join(", ") + "]");
 			return true;
 		}
-		
+
 		var manifestData :ServedManifestMessage = {manifest:getServedManifest(pathToken)};
-		
+
 		res.writeHead(200, { 'Content-Type': 'application/json' });
 		res.end(Json.stringify(manifestData, null, "\t"));
-		
+
 		return true;
 	}
-	
+
 	function getServedManifest(manifestKey) :ServedManifest
 	{
 		if (!_manifests.exists(manifestKey)) {
 			Console.error("No manifest for key=" + manifestKey);
 			return null;
 		}
-		
+
 		var files = new Array<FileDef>();
-		
+
 		for (f in _manifests.get(manifestKey).assets) {
 			files.push({name:f.relativePath, md5:f.md5, bytes:f.bytes});
 		}
-		
+
 		if (_manifests.get(manifestKey).md5 == null) {
 			var s = new StringBuf();
 			for (f in _manifests.get(manifestKey).assets) {
@@ -365,203 +492,227 @@ class Server
 			}
 			_manifests.get(manifestKey).md5 = Node.crypto.createHash("md5").update(s.toString()).digest("hex");
 		}
-		
+
 		var manifest :ServedManifest = {assets:files, id:manifestKey, md5:_manifests.get(manifestKey).md5};
-		
+
 		return manifest;
 	}
-	
+
 	function serveManifests(req :NodeHttpServerReq, res :NodeHttpServerResp) :Bool
 	{
-		if (req.url != "/manifests.json") {
+		var queryString = Node.url.parse(req.url);
+		if (queryString.pathname != "/manifests.json") {
 			return false;
 		}
-		
-		var result :{manifests:{}} = {manifests:{}};
-		var manifests :Dynamic = new Array<ServedManifest>(); 
-		
+
+		// var result :{manifests:{}} = {manifests:{}};
+		var manifests = {};
+		// var manifests :Dynamic = new Array<ServedManifest>();
+
 		for (manifestKey in _manifests.keys()) {
 			var manifest :ServedManifest = getServedManifest(manifestKey);
-			Reflect.setField(result.manifests, manifestKey, manifest);
+			Reflect.setField(manifests, manifestKey, manifest);
 		}
-		
+
+		var manifestsStringForHash = Json.stringify(manifests);
+		var manifestsMd5 = Node.crypto.createHash("md5").update(manifestsStringForHash).digest("hex");
+		var result :ServedManifestsMessage = {md5:manifestsMd5, manifests:manifests};
+		var resultString = Json.stringify(result, null, "\t");
+
 		res.writeHead(200, { 'Content-Type': 'application/json' });
-		Console.log("Manifests: " + Json.stringify(result, null, "\t"));
-		res.end(Json.stringify(result, null, "\t"));
-		
+		// Console.log("Manifests: " + Json.stringify(resultString, null, "\t"));
+		res.end(resultString);
+
 		return true;
 	}
-	
-	function serveOds(req :NodeHttpServerReq, res :NodeHttpServerResp) :Bool
-	{
-		if (!req.url.endsWith(".ods")) {
-			return false;
-		}
-		
-		var urlObj = Node.url.parse(req.url, true);
-		var firstPathToken = urlObj.pathname.substr(1).split("/")[0];
-		
-		var filePath = urlObj.pathname;
-		if (filePath.charAt(0) == "/") {
-			filePath = filePath.substr(1);
-		}
-		
-		if (!_files.exists(filePath)) {
-			Console.error("Requested " + filePath + ", but no file exists");
-			res.writeHead(404, { 'Content-Type': 'text/plain' });
-			res.end("Requested " + filePath + ", but no file exists.\n\tAll files:\n\t\t" + {iterator:_files.keys}.array().join("\n\t\t"));
-			return true;
-		}
-		
-		var fileBlob = _files.get(filePath);
-		
-		var data = OdsRuntimeParser.parse(fileBlob.absolutePath);
-		
-		res.writeHead(200, { 'Content-Type': 'application/json' });
-		Console.log("Serving : " + Json.stringify(data, null, "\t"));
-		res.end(Json.stringify(data, null, "\t"));
-		
-		return true;
-	}
-	
+
 	function onConnectFailed (error :Dynamic) :Void
 	{
 		Console.error("WebSocketServer connection failed: " + error);
 	}
-	
+
 	function onWebsocketRequest (request :WebSocketRequest) :Void
 	{
 		Console.info("request.requestedProtocols: " + request.requestedProtocols);
 		var protocol :String = null; ////For now, accept all requests.  This could be limited if required.
 		var connection = request.accept(protocol, request.origin);
-		
+
 		var onError = function(error) {
 			Console.error(' Peer ' + connection.remoteAddress + ' error: ' + error);
 		}
 		connection.on('error', onError);
-		
+
+		connection.on('message', function(message) {
+	        if (message.type == 'utf8') {
+	            Console.info('Received Message: ' + message.utf8Data);
+	        }
+	        else if (message.type == 'binary') {
+	            Console.info('Received Binary Message of ' + message.binaryData.length + ' bytes');
+	        }
+	    });
+
 		connection.once('close', function(reasonCode, description) {
 			Console.info(Date.now() + ' client at "' + connection.remoteAddress + '" disconnected.');
 			connection.removeListener('error', onError);
 		});
 	}
-	
+
+	function onWebsocketMessage (message :WebSocketMessage) :Void
+	{
+		if (message.type == 'utf8') {
+			try {
+				var jsonrpc :RequestDef = Json.parse(message.utf8Data);
+				if (jsonrpc.method == "log") {
+					Console.info(jsonrpc.params[0]);
+				}
+			} catch (e :Dynamic) {
+				Console.error(e);
+			}
+		} else {
+			Console.info("Binary messages ignored");
+		}
+	}
+
 	function onFileChanged(file :WatchedFile) :Void
 	{
 		// Console.info({"log":"onFileChanged", "file":file});
 		Console.info("onFileChanged:" + file.relativePath);
-		if (file.relativePath == ".catapult")
+		if (file.relativePath == "catapult.json")
 		{
-			Console.warn(".catapult changed, reloading config!!");
+			Console.warn("catapult.json changed, reloading config!!");
 			loadConfig();
 			return;
 		}
-		
+
 		function sendMessageToAllClients(msg :String) {
-			Console.info({log:"Sending", msg:msg});
-			for (connection in _websocketServer.connections) {
-				connection.sendUTF(msg);
+			var clientCount = 0;
+			for (webSocketServer in _websocketServers) {
+				for (connection in webSocketServer.connections) {
+					clientCount++;
+				}
+			}
+			Console.info({log:"Sending to " + clientCount + " clients", msg:msg});
+			for (webSocketServer in _websocketServers) {
+				for (connection in webSocketServer.connections) {
+					connection.sendUTF(msg);
+				}
 			}
 		}
 
 		// Console.info("File changed: " + Json.stringify(file, null, "\t"));
 		file.md5 = FileSystem.signature(file.absolutePath);
 		file.bytes = FileSystem.stat(file.absolutePath).size;
-		
+
 		//Invalidate the manifest md5
 		if (_manifests.exists(file.manifestKey)) {
 			_manifests.get(file.manifestKey).md5 = null;
 		}
-		
+
 		var message :FileChangedMessage = {type:Catapult.MESSAGE_TYPE_FILE_CHANGED, name:file.relativePath, md5:file.md5, manifest:file.manifestKey, bytes:file.bytes};
-		var messageString = Json.stringify(message, null, "\t");
-		
+		var messageString = Json.stringify(message);
 		sendMessageToAllClients(messageString);
 
-		//Send a reload message on a js file change
-		if (file.relativePath.endsWith(".js")) {
-			var restartMessage :Message = {type:Catapult.MESSAGE_TYPE_RESTART_};
-			messageString = Json.stringify(restartMessage, null, "\t");
-			sendMessageToAllClients(messageString);
-		}
-		
-		if (file.relativePath.endsWith(".ods")) {
-			Console.info("LibreOffice spreadsheet changed, sending json data.");
-			//Send the parsed ODS file
-			//Meant for haxe objects defined in a spreadsheet.
-			//https://github.com/ncannasse/hxods
-			//The updated ODS file is not copied. Should it be?  Probably not since it could be downloaded
-			//and this might not be desirable
-			var update = function() {
-				var data = OdsRuntimeParser.parse(file.absolutePath);
-				var dataMessage :ODSDataChangedMessage = cast message;
-				dataMessage.type = Catapult.MESSAGE_TYPE_FILE_CHANGED_ODS;
-				dataMessage.data = cast data;
-				var dataMessageString = Json.stringify(dataMessage, null, "\t");
-				sendMessageToAllClients(dataMessageString);
-			}
-			//Save operations sometimes cause the file size to be 0.  It's probably a copy then rename operation
-			if (FileSystem.stat(file.absolutePath).size == 0) {
-				Node.setTimeout(update, 100);
-			} else {
-				update();
-			}
-		}
-		
+		var messageRPC :RequestDef = {method:Catapult.MESSAGE_TYPE_FILE_CHANGED, params:[{name:file.relativePath, md5:file.md5, manifest:file.manifestKey, bytes:file.bytes}], jsonrpc:"2.0"};
+		messageString = Json.stringify(messageRPC);
+		sendMessageToAllClients(messageString);
+
 		//Custom file change triggers
 		if (_config.triggers != null)  {
-			Console.info("Checking file triggers");
-			for (commandData in _config.triggers) {
-				if (new EReg(commandData.regex, "").match(file.relativePath)) {
-					Console.info("Matches " + commandData.regex);
-
-					if (commandData.command != null) {
-						var commandProcess = Node.childProcess.spawn(commandData.command, commandData.args != null ? commandData.args : []);
-					
-						commandProcess.stdout.on('data', function (data) {
-							Console.info('stdout: ' + data);
-						});
-						
-						commandProcess.stderr.on('data', function (data) {
-							Console.info('stderr: ' + data);
-						});
-
-						commandProcess.on('close', function (code :Int) {
-							Console.info('child process exited with code ' + code);
-
-							if (code == 0 && commandData.on_success_event != null) {
-								Console.info({"log":"on_success_event", "message":commandData.on_success_event});
-								sendMessageToAllClients(Json.stringify(commandData.on_success_event, null, "\t"));
-							}
-						});	
+			for (triggerData in _config.triggers) {
+				if (new EReg(triggerData.regex, "").match(file.relativePath)) {
+					Console.info("Matches trigger regex" + triggerData.regex);
+					if (triggerData.disabled == true) {
+						Console.info("...disabled");
+						continue;
 					}
+					if (triggerData.commands != null) {
+						if (_currentActiveTriggers.exists(triggerData.regex)) {
+							Console.info("Trigger [" + triggerData.regex + "] already processing, ignoring");
+							continue;
+						}
 
-					if (commandData.broadcast_event != null) {
-						Console.info({"log":"broadcast_event", "message":commandData.broadcast_event});
-						sendMessageToAllClients(Json.stringify(commandData.broadcast_event, null, "\t"));
+						_currentActiveTriggers.set(triggerData.regex, true);
+						var step = new t9.async.Step();
+						var commandArray = [];
+
+						for (commandData in triggerData.commands) {
+							commandArray.push(function(err, code) {
+
+								if (err != null) {
+									Console.warn("previous command failed.");
+									step.cb(err, code);
+									return;
+								}
+
+								var options = {cwd:Node.process.cwd()};
+
+
+								var errString = '';
+
+								var commandProcess = Node.child_process.spawn(commandData.command, commandData.args != null ? commandData.args : [], options);
+
+								commandProcess.stdout.on('data', function (data) {
+									Console.info('stdout: ' + data);
+								});
+
+								commandProcess.stderr.on('data', function (data) {
+									Console.info('stderr: ' + data);
+									errString += "" + data;
+								});
+
+								commandProcess.on('close', function (code :Int) {
+									Console.info("'" +  commandData.command + " " + (commandData.args != null ? commandData.args.join(" ") : "") + "' exited with code " + code);
+									if (code == 0) {
+										step.cb(null, code);
+									} else {
+										step.cb(code, null);
+									}
+								});
+							});
+						}
+
+						commandArray.push(function(err, code) {
+							if (code == 0 && triggerData.on_success_event != null) {
+								Console.info({"log":"on_success_event", "message":triggerData.on_success_event});
+								sendMessageToAllClients(Json.stringify(triggerData.on_success_event, null, "\t"));
+							}
+							step.cb(null, null);
+						});
+
+						commandArray.push(function(err, code) {
+							_currentActiveTriggers.remove(triggerData.regex);
+						});
+
+						step.chain(commandArray);
+					} else { //No commmands, but an on_success_event
+						Console.info("Trigger, but no commands");
+						if (triggerData.on_success_event != null) {
+							Console.info({"log":"on_success_event", "message":triggerData.on_success_event});
+							sendMessageToAllClients(Json.stringify(triggerData.on_success_event, null, "\t"));
+						}
 					}
 				}
 			}
 		}
 	}
-	
+
 	function setupFileWatching(rootPath :String) :Void
 	{
 		Console.info("Watching rootPath: " + rootPath);
-		
+
 		if (_files == null) {
 			_files = new Map();
 		}
-		
+
 		if (!(FileSystem.exists(rootPath) && FileSystem.isDirectory(rootPath))) {
 			throw rootPath + " doesn't exist";
 		}
-		
+
 		var baseName = Node.path.basename(rootPath);
 		// var baseName = subdir;
 		var fileArray = new Array<WatchedFile>();
-		_manifests[baseName] = {md5:null, assets:fileArray, id:baseName, relativePath:rootPath};	
-		
+		_manifests[baseName] = {md5:null, assets:fileArray, id:baseName, relativePath:rootPath};
+
 		var numFilesWatched = 0;
 		for (relativeFilePath in FileSystem.readRecursive(rootPath, fileFilter)) {
 			var absoluteFilePath = FileSystem.join(rootPath, relativeFilePath);
@@ -581,110 +732,71 @@ class Server
 		}
 		Console.info("Watching " + numFilesWatched + " files in " + rootPath);
 	}
-	
+
 	function watchFile(file :WatchedFile):Void//, fireChangedEvent :Bool = false, retry :Bool = false, retryCount :Int = 0) :Void
 	{
-		watchFileSuperReliable(file.absolutePath, 
+		watchFileSuperReliable(file.absolutePath,
 			function(?_) {
 				onFileChanged(file);
 			});
 	}
-	
+
+	function getManifestKeys() :Array<String>
+	{
+		var keys = new Array<String>();
+		for(key in _manifests.keys()) {
+			keys.push(key);
+		}
+		return keys;
+	}
+
 	static function fileFilter(filePath :String) :Bool
 	{
 		return filePath != null && !(Node.path.basename(filePath).startsWith(".") || filePath.endsWith("cache"));
 	}
 
 	/**
-		Watching files in Node is really unreliable: inexplicably changed to a file will
-		no longer send change events.  This function wraps a timed check so that 
-		if file changeds no longer register with the NodeFSWatcher object, that watcher 
-		is closed and a new one created.
+		Watching files in Node is really unreliable: inexplicably changing a file will
+		sometimes no longer send change events.  This function switches to polling for
+		file changes after the first change.
 	 */
 	static function watchFileSuperReliable(filePath :String, onFileChanged :String->Void, failureRetryDelayMs :Int = 500) :Void
 	{
-		Node.fs.exists(filePath, 
+		var md5 = "";
+
+		var check = function() {
+			if (FileSystem.exists(filePath)) {
+				var newMd5 = FileSystem.signature(filePath);
+				if (newMd5 != md5) {
+					md5 = newMd5;
+					onFileChanged(filePath);
+				}
+			}
+		}
+
+		var poll :Void->Void = null;
+		poll = function() {
+			check();
+			haxe.Timer.delay(poll, 300);
+		}
+
+		Node.fs.exists(filePath,
 			function(exists) {
 				if (exists) {
-					var standardFileModifiedCheck = false; //Used for checking if the file watching is broken
-					var pollingFileModifiedCheck = false; //Used for checking if the file watching is broken
+					md5 = FileSystem.signature(filePath);
 
-					// Console.info("Watching: " + file.absolutePath);
-					var options :NodeWatchOpt = {"persistent":true};
-					var watcher :NodeFSWatcher = null;
-
-					var close = function() {
-						if (watcher != null) {
-							watcher.close();
-							watcher = null;
-						}
-					}
-
-					watcher = Node.fs.watch(filePath, options, 
+					//It's not persistant. When the file changes, we switch to a more reliable polling.
+					//This is not efficient for large numbers of files, so we're assuming that
+					//the numbers of modifications will be limited to a small number of files.
+					var options :NodeWatchOpt = {"persistent":false};
+					var watcher :NodeFSWatcher = Node.fs.watch(filePath, options,
 						function(event :String, ?ignored :String) {
-
-							if (watcher == null) {
-								// Console.warn("watcher == null");
-								return;
-							}
-
-							//Some programs save a file with an intermediate rename step.
-							//This breaks the NodeFSWatcher, so we have to watch the new file
-							// Console.info({log:"file_changed", event:event, path:filePath});
-							if (event == 'rename') {
-								// Console.warn(filePath + " renamed.");
-								//Sometimes 'renaming' a file means deleting then recreating
-								//This means that there is some time between those events where
-								//the file doesn't exist.  So retry x times until it does exist.
-								close();
-								if (FileSystem.exists(filePath)) {
-									watchFileSuperReliable(filePath, onFileChanged);
-								} else {
-									haxe.Timer.delay(watchFileSuperReliable.bind(filePath, onFileChanged, failureRetryDelayMs * 2), failureRetryDelayMs);
-								}
-							} else {
-								if (FileSystem.stat(filePath).size > 0) {
-									onFileChanged(filePath);
-									standardFileModifiedCheck = true;
-
-									//Sometimes when a file is chanched, the watching is broken.  Watch again anew, and if it is, re-establish the connection
-									Node.fs.watch(filePath, {"persistent":false}, 
-										function(event :String, ?ignored :String) {
-											if (watcher == null) {
-												// Console.warn("watcher == null in timed check");
-												return;
-											}
-
-											pollingFileModifiedCheck = true;
-											haxe.Timer.delay(
-												function() {
-
-													if (watcher == null) {
-														// Console.warn("watcher == null in timed callback");
-														return;
-													}
-
-													if (!(standardFileModifiedCheck && pollingFileModifiedCheck)) {
-														// Console.warn({log:"Failure to detect changed on the second change, re-watching", path:filePath});
-														close();
-														onFileChanged(filePath);
-														haxe.Timer.delay(watchFileSuperReliable.bind(filePath, onFileChanged), failureRetryDelayMs);
-													} else {
-														standardFileModifiedCheck = false;
-														pollingFileModifiedCheck = false;
-													}
-												}, 50);
-										});
-								} else {
-									Console.info("Ignoring file change event because bytes==0 " + filePath); 
-								}
-							}
+							poll();
 						});
 
-					watcher.on('error', 
+					watcher.on('error',
 						function(err) {
 							Console.error({log:"NodeFSWatcher:error, retrying", error:err, path:filePath});
-							close();
 							haxe.Timer.delay(watchFileSuperReliable.bind(filePath, onFileChanged, failureRetryDelayMs * 2), failureRetryDelayMs);
 						});
 				} else {
@@ -693,4 +805,14 @@ class Server
 				}
 			});
 	}
+
+	private static var DEFAULT_CONFIG :Dynamic =
+		{
+			"port":8000,
+			"address":"0.0.0.0",
+			"file_server":"./",
+			"manifests" : [],
+			"paths_to_watch_for_file_changes" : [],
+			"triggers" : []
+		};
 }

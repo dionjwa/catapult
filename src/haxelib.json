@@ -1,0 +1,11 @@
+{
+  "name": "catapult",
+  "license": "BSD",
+  "tags": ["nodejs","flambe"],
+  "description": "Asset server and file monitor for live updating and reloading.",
+  "contributors": ["dionjwa"],
+  "releasenote": "Haxe 3 only.",
+  "version": "1.0",
+  "url": "https://github.com/dionjwa/catapult",
+  "dependencies": {}
+}

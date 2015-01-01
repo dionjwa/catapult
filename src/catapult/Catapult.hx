@@ -28,6 +28,11 @@ typedef ServedManifest = {
 	var id :String;
 }
 
+typedef ServedManifestsMessage = {
+	var manifests :Dynamic<ServedManifest>;
+	var md5 :String;
+}
+
 typedef ServedManifestMessage = {
 	var manifest :ServedManifest;
 }

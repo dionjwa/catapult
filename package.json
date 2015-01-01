@@ -1,0 +1,8 @@
+{
+  "devDependencies": {},
+  "repository": "git@github.com:dionjwa/catapult.git",
+  "dependencies": {
+    "watch": "^0.13.0",
+    "ws": "^0.6.3"
+  }
+}

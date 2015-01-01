@@ -7,10 +7,15 @@
 				".tags",
 				".tags_sorted_by_file"
 			],
+			"folder_exclude_patterns":
+			[
+				"node_modules"
+			],
 			"follow_symlinks": true,
-			"path": "/Users/dion/storage/projects/haxelibs/catapult"
+			"path": "./"
 		},
 		{
+			"name":"haxe/std",
 			"file_exclude_patterns":
 			[
 				".tags",
@@ -19,6 +24,20 @@
 			"follow_symlinks": true,
 			"path": "/usr/lib/haxe/std"
 		},
+		{
+			"name":"haxenode",
+			"file_exclude_patterns":
+			[
+				".tags",
+				".tags_sorted_by_file"
+			],
+			"follow_symlinks": true,
+			"path": "/Users/dion/storage/projects/haxelibs/node-std/src"
+		},
+		{
+			"name":"lib/t9_public",
+			"path": "/Users/dion/storage/projects/haxelibs/t9_public"
+		}
 
 
 	]
