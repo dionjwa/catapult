@@ -1,6 +1,20 @@
 {
+	"author": "Dion Whitehead Amago",
+	"name": "catapult",
+	"description": "Game development asset server.  Monitors files for changes and notifies clients of changes, serves spreadsheets as json. ",
+	"license": "BSD",
+	"version": "2.0.0",
+	"keywords": [
+	    "node.js",
+	    "game",
+	    "haxe",
+	    "flambe"
+	  ],
 	"devDependencies": {},
-	"repository": "git@github.com:dionjwa/catapult.git",
+	"repository": {
+	    "type": "git",
+	    "url": "https://github.com/dionjwa/catapult"
+	  },
 	"dependencies": {
 		"watch": "^0.13.0",
 		"ws": "^0.6.3",
@@ -9,23 +23,12 @@
 	},
 	"scripts": {
 		"build": "haxe build.hxml",
-		"setbuild:editor_nodejs": "./bin/setbuild editor/build_nodejs.hxml",
-		"precopy_fresh_catapult_into_lib": "cd ../haxelibs/catapult/ ; haxe build.hxml",
-		"copy_fresh_catapult_into_lib": "cp ../haxelibs/catapult/catapult.js ./lib/catapult.js",
-		"catapult": "node ./lib/catapult.js",
-		"build": "haxe build.hxml",
-		"postbuild2": "echo '#!/usr/bin/env node' | cat - catapult.js > temp && mv temp catapult.js ; chmod 755 catapult.js",
-		"launch": "npm run build2 ; node catapult.js",
-		"precatapult": "haxe build.hxml",
-		"catapult": "node catapult.js",
-		"install_haxelibs": "haxelib install etc/build_manifest_server.hxml",
-		"manifest_server": "./bin/serve_manifests.js ./demo/assets",
-		"premanifest_server": "haxe build.hxml",
-		"manifest_filewatcher": "./bin/watch_manifests.js ./demo/assets",
-		"premanifest_filewatcher": "haxe build.hxml"
+		"install_haxelibs": "haxelib install build.hxml",
+		"demo_server": "./bin/catapult.js ./demo/assets",
+		"predemo_server": "haxe build.hxml"
 	},
-	"main": "catapult.js",
+	"main": "lib/catapult.js",
 	"bin": {
-		"catapult": "catapult.js"
+		"catapult": "bin/catapult.js"
 	}
 }

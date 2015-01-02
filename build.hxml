@@ -5,6 +5,7 @@
 -lib nodejs
 -lib mconsole
 
+#Once these are published, I'll shift to haxelibs
 -cp ../t9_public/src
 -cp ../remoting/src
 -cp src
