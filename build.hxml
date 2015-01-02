@@ -1,26 +1,14 @@
- #Server
-
  #Since nodejs is from a git submodule instead of a haxelib for now
  --macro allowPackage("sys")
 
 -debug
--D nodejs
--D mconsole
+-lib nodejs
+-lib mconsole
 
--cp lib/mconsole/src
--cp lib/nodejs/src
 -cp ../t9_public/src
 -cp ../remoting/src
 -cp src
 
--main catapult.ManifestServer
+-main catapult.Main
 
--js catapult.js
-
-# --next
-
-# -cmd echo "#!/usr/bin/env node"|cat - catapult.js > /tmp/out && mv /tmp/out catapult.js
-
-# --next
-
-# -cmd chmod 755 catapult.js
+-js lib/catapult.js

@@ -1,5 +1,11 @@
 package catapult;
 
+typedef FileChangedEvent = {
+	var absolutePath :String;
+	var manifest :ServedManifest;
+	var asset :FileDef;
+}
+
 typedef WatchedFile = {
 	var md5 :String;
 	var bytes :Int;
@@ -45,17 +51,9 @@ typedef FileChangedMessage = {>FileDef,
 	var manifest :String;
 }
 
-typedef ODSData = {
-	var h :Map<String, Array<Dynamic>>;
-}
-
-typedef ODSDataChangedMessage = {>FileChangedMessage,
-	var data :ODSData;
-}
-
-class Catapult
+@:expose("Constants")
+class Constants
 {
-	inline public static var MESSAGE_TYPE_RESTART_ :String = "restart";
-	inline public static var MESSAGE_TYPE_FILE_CHANGED :String = "file_changed";
-	inline public static var MESSAGE_TYPE_FILE_CHANGED_ODS :String = "file_changed_ods";
+	inline public static var MESSAGE_TYPE_RESTART_ :String = "catapult.restart";
+	inline public static var MESSAGE_TYPE_FILE_CHANGED :String = "catapult.file_changed";
 }

@@ -1,34 +1,23 @@
 package catapult;
 
 import haxe.Json;
-import catapult.Catapult;
+import catapult.Constants;
 import js.Node;
 import sys.FileSystem;
 import t9.remoting.ServeFile;
 
 using StringTools;
 
-@:expose
+@:expose("ManifestServer")
 class ManifestServer
 {
-	@:expose
-	public static function create()
-	{
-		return new ManifestServer();
-	}
-
 	public var manifests (get, null):ServedManifestsMessage;
+	public var manifestsPath (default, set) :String;
 	var _manifests :ServedManifestsMessage;
-	var _manifestsPath :String;
-
-	public static function main () :Void
-	{
-	}
 
 	public function new ()
 	{
-		_manifestsPath = "./";
-		setManifestsFolder(_manifestsPath);
+		setManifestsFolder("./");
 	}
 
 	public function rebuildManifest()
@@ -36,9 +25,32 @@ class ManifestServer
 		_manifests = null;
 	}
 
+	public function onFileChanged(event :FileChangedEvent)
+	{
+		var allManifestsMd5StringBuffer = new StringBuf();
+		for (manifestKey in Reflect.fields(manifests.manifests)) {
+			var manifest :ServedManifest = Reflect.field(manifests.manifests, manifestKey);
+			if (manifest.id == event.manifest.id) {
+				//Rebuild this one
+				var md5StringBuffer = new StringBuf();
+				for (asset in manifest.assets) {
+					if (asset.name == event.asset.name) {
+						var absoluteFilePath = Node.path.join(manifestsPath, manifestKey, asset.name);
+						asset.md5 = FileSystem.signature(absoluteFilePath);
+						asset.bytes = FileSystem.stat(absoluteFilePath).size;
+					}
+					md5StringBuffer.add(asset.md5);
+				}
+				manifest.md5 = Node.crypto.createHash("md5").update(md5StringBuffer.toString()).digest("hex");
+			}
+			allManifestsMd5StringBuffer.add(manifest.md5);
+		}
+		manifests.md5 = Node.crypto.createHash("md5").update(allManifestsMd5StringBuffer.toString()).digest("hex");
+	}
+
 	public function createServer(port :Int)
 	{
-		var server = Node.http.createServer(function(req :NodeHttpServerReq, res :NodeHttpServerResp) {
+		var server :NodeHttpServer = Node.http.createServer(function(req :NodeHttpServerReq, res :NodeHttpServerResp) {
 			if(!this.onHttpRequest(req, res)) {
 				res.writeHead(404);
 				res.write("<!DOCTYPE html><html><body><h1>Unknown API</h1>" + Json.stringify(manifests, null, "\t") + "</body></html>");
@@ -46,11 +58,12 @@ class ManifestServer
 			}
 		});
 		server.listen(port, "0.0.0.0", function() {trace("Manifest server listening on 0.0.0.0:" + port);});
+		return server;
 	}
 
-	public function setManifestsFolder(manifestsPath :String)
+	public function setManifestsFolder(path :String)
 	{
-		_manifestsPath = manifestsPath;
+		set_manifestsPath(path);
 		rebuildManifest();
 		return this;
 	}
@@ -119,7 +132,7 @@ class ManifestServer
 			return false;
 		}
 
-		var fullFilePath = Node.path.join(_manifestsPath, filePath);
+		var fullFilePath = Node.path.join(manifestsPath, filePath);
 		if (Node.fs.existsSync(fullFilePath)) {
 			ServeFile.serveFile(fullFilePath, res);
 			return true;
@@ -128,10 +141,16 @@ class ManifestServer
 		}
 	}
 
+	function set_manifestsPath(path :String) :String
+	{
+		this.manifestsPath = path;
+		return path;
+	}
+
 	function get_manifests():ServedManifestsMessage
 	{
 		if (_manifests == null) {
-			_manifests = getManifests(_manifestsPath);
+			_manifests = getManifests(manifestsPath);
 		}
 		return _manifests;
 	}
