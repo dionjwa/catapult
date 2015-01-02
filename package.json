@@ -1,8 +1,29 @@
 {
-  "devDependencies": {},
-  "repository": "git@github.com:dionjwa/catapult.git",
-  "dependencies": {
-    "watch": "^0.13.0",
-    "ws": "^0.6.3"
-  }
+	"devDependencies": {},
+	"repository": "git@github.com:dionjwa/catapult.git",
+	"dependencies": {
+		"watch": "^0.13.0",
+		"ws": "^0.6.3",
+		"commander": "latest",
+		"mime": "latest"
+	},
+	"scripts": {
+		"build": "haxe build.hxml",
+		"setbuild:editor_nodejs": "./bin/setbuild editor/build_nodejs.hxml",
+		"precopy_fresh_catapult_into_lib": "cd ../haxelibs/catapult/ ; haxe build.hxml",
+		"copy_fresh_catapult_into_lib": "cp ../haxelibs/catapult/catapult.js ./lib/catapult.js",
+		"catapult": "node ./lib/catapult.js",
+		"build_deosnt_work": "haxe --macro allowPackage('sys') -debug -D nodejs -D mconsole -cp lib/mconsole/src -cp lib/nodejs/src -cp ../t9_public/src -cp ../remoting/src -cp src -main catapult.ManifestServer -js catapult2.js",
+		"build2": "haxe build.hxml",
+		"postbuild2": "echo '#!/usr/bin/env node' | cat - catapult.js > temp && mv temp catapult.js ; chmod 755 catapult.js",
+		"launch": "npm run build2 ; node catapult.js",
+		"precatapult": "haxe build.hxml",
+		"catapult": "node catapult.js",
+		"manifest_server": "./bin/serve_manifests.js catapult.js ./demo/assets",
+		"premanifest_server": "haxe build.hxml"
+	},
+	"main": "catapult.js",
+	"bin": {
+		"catapult": "catapult.js"
+	}
 }

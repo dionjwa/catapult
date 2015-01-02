@@ -2,7 +2,6 @@ package catapult;
 
 typedef WatchedFile = {
 	var md5 :String;
-	// var type :String;
 	var bytes :Int;
 	var relativePath :String;
 	var absolutePath :String;

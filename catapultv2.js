@@ -82,6 +82,53 @@ function broadcastMessage(message) {
 	}
 }
 
+
+static function watchFileSuperReliable(filePath :String, onFileChanged :String->Void, failureRetryDelayMs :Int = 500) :Void
+	{
+		var md5 = "";
+
+		var check = function() {
+			if (FileSystem.exists(filePath)) {
+				var newMd5 = FileSystem.signature(filePath);
+				if (newMd5 != md5) {
+					md5 = newMd5;
+					onFileChanged(filePath);
+				}
+			}
+		}
+
+		var poll :Void->Void = null;
+		poll = function() {
+			check();
+			haxe.Timer.delay(poll, 300);
+		}
+
+		Node.fs.exists(filePath,
+			function(exists) {
+				if (exists) {
+					md5 = FileSystem.signature(filePath);
+
+					//It's not persistant. When the file changes, we switch to a more reliable polling.
+					//This is not efficient for large numbers of files, so we're assuming that
+					//the numbers of modifications will be limited to a small number of files.
+					var options :NodeWatchOpt = {"persistent":false};
+					var watcher :NodeFSWatcher = Node.fs.watch(filePath, options,
+						function(event :String, ?ignored :String) {
+							poll();
+						});
+
+					watcher.on('error',
+						function(err) {
+							Console.error({log:"NodeFSWatcher:error, retrying", error:err, path:filePath});
+							haxe.Timer.delay(watchFileSuperReliable.bind(filePath, onFileChanged, failureRetryDelayMs * 2), failureRetryDelayMs);
+						});
+				} else {
+					Console.warn("Asked to watch but doesn't exist (but retrying): " + filePath);
+					haxe.Timer.delay(watchFileSuperReliable.bind(filePath, onFileChanged, failureRetryDelayMs * 2), failureRetryDelayMs);
+				}
+			});
+	}
+
 watch.watchTree(rootPath, options, function (f, curr, prev) {
     if (typeof f == "object" && prev === null && curr === null) {
     	// Finished walking the tree

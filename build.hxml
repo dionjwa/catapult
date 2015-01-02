@@ -7,22 +7,20 @@
 -D nodejs
 -D mconsole
 
--lib format #Needed for the ods parser
-
 -cp lib/mconsole/src
 -cp lib/nodejs/src
 -cp ../t9_public/src
 -cp ../remoting/src
 -cp src
 
--main catapult.Server
+-main catapult.ManifestServer
 
 -js catapult.js
 
---next
+# --next
 
--cmd echo "#!/usr/bin/env node"|cat - catapult.js > /tmp/out && mv /tmp/out catapult.js
+# -cmd echo "#!/usr/bin/env node"|cat - catapult.js > /tmp/out && mv /tmp/out catapult.js
 
---next
+# --next
 
--cmd chmod 755 catapult.js
+# -cmd chmod 755 catapult.js

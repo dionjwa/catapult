@@ -196,7 +196,6 @@ class Server
 			//Create the http server
 			var http = Node.http;
 
-
 			var onReady = function() {
 				var urlString = Date.now() + ' Catapult server available at:\n    [ws://' + _config.address + ':' + _config.port + ']\n    [ws://' + _config.address + ':' + (_config.port + 1) + ']';
 				urlString += '\nUrls:\n    http://' + _config.address + ':' + _config.port + '/manifests.json';
@@ -348,9 +347,74 @@ class Server
 		var urlObj = Node.url.parse(req.url, true);
 		var firstPathToken = urlObj.pathname.substr(1).split("/")[0];
 
+		var filePath = urlObj.pathname.substr(1);
+		Console.log("filePath: " + filePath);
+		if (_config.file_server_path != null) {
+			filePath = Node.path.join(_config.file_server_path, filePath);
+		}
 		var fileKey = urlObj.pathname.substr(1);
 		Console.log("fileKey: " + fileKey + ", _files.exists(fileKey)=" + _files.exists(fileKey));
 
+		if (Node.fs.existsSync(filePath)) {
+			Console.log("Serving regular file: " + filePath);
+			t9.remoting.ServeFile.serveFile(req, res, _config.file_server_path);
+		} else if (_files.exists(fileKey)) {
+			var fileBlob = _files[fileKey];
+			// Console.log({fileBlob:fileBlob});
+			var manifest = _manifests[fileBlob.manifestKey];
+			// Console.log({manifest:manifest});
+			var serverKey = manifest.id;//Node.path.dirname(
+			// Console.log({serverKey:serverKey});
+			var staticServer :StaticServer = _servedFolders.get(serverKey);
+			Console.assert(staticServer != null, {message:"staticServer == null", urlObj:urlObj, fileBlob:fileBlob, manifest:manifest, _servedFolders:_servedFolders});
+
+			var tokens = urlObj.pathname.split(Node.path.sep).filter(function(s :String) return s != null && s.length > 0);
+			var filePath = tokens.join(Node.path.sep);
+
+			var absoluteFilePath = Node.path.join(staticServer.root, fileBlob.relativePath);
+
+			Node.fs.exists(absoluteFilePath, function(exists :Bool) :Void {
+				if (exists) {
+					Console.info('Serving: $absoluteFilePath from ${fileBlob.relativePath} filePath=${filePath}');
+					Console.info(staticServer);
+					staticServer.serveFile(fileBlob.relativePath, 200, {}, req, res);
+					// staticServer.serveFile(fileKey, 200, null, req, res);
+					Console.log("served");
+
+					// staticServer.serve(req, res, function(err, result)  {
+					// 	if (err) {
+					// 		Console.warn(urlObj.pathname + ", err=" + Json.stringify(err));
+					// 		Console.info(urlObj + "");
+					// 		Console.info(Date.now() + ' Received request for ' + req.url);
+
+					// 		res.writeHead(404, { 'Content-Type': 'text/plain' });
+					// 		var manifestKeys = {iterator:_manifests.keys}.array();
+					// 		for (i in 0...manifestKeys.length) {
+					// 			manifestKeys[i] = "http://<host>:" + _config.port +  "/" + manifestKeys[i] + "/manifest.json";
+					// 		}
+					// 		res.end("No manifest at that path found (firstPathToken=" + firstPathToken + "), possible served folders are [" + {iterator:_servedFolders.keys}.array().join(", ") + "]");
+					// 	} else {
+					// 		Console.info('Served: $absoluteFilePath from ${fileBlob.relativePath}');
+					// 	}
+					// });
+
+
+
+				} else {
+					Console.warn(absoluteFilePath + " not found.");
+					res.writeHead(404);
+					res.write("<!DOCTYPE html><html><body><h1>404 File not found</h1></body></html>");
+					res.end();
+				}
+			});
+		}
+
+		return;
+
+
+
+		
+		
 
 		if (_files.exists(fileKey)) {
 			var fileBlob = _files[fileKey];

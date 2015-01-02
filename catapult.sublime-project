@@ -37,8 +37,10 @@
 		{
 			"name":"lib/t9_public",
 			"path": "/Users/dion/storage/projects/haxelibs/t9_public"
+		},
+		{
+			"name":"lib/remoting",
+			"path": "../remoting/src"
 		}
-
-
 	]
 }
