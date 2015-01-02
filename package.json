@@ -29,6 +29,6 @@
 	},
 	"main": "lib/catapult.js",
 	"bin": {
-		"catapult": "bin/catapult.js"
+		"catapult": "node bin/catapult.js"
 	}
 }
