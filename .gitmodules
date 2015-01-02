@@ -1,9 +1,6 @@
 [submodule "lib/hxods"]
 	path = lib/hxods
 	url = git://github.com/ncannasse/hxods.git
-[submodule "lib/mconsole"]
-	path = lib/mconsole
-	url = git://github.com/dionjwa/mconsole.git
 [submodule "lib/nodejs"]
 	path = lib/nodejs
 	url = https://github.com/dionjwa/nodejs-std
