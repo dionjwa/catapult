@@ -26,4 +26,4 @@ var manifestWebsockets = new catapult.ManifestWebsocket()
 	.setManifestFileWatcher(manifestFileWatcher)
 	.createWebsocketServer(httpserver);//You could put in your own Websocket server here.
 
-httpserver.listen(port, "0.0.0.0", function() {console.log("Manifest server listening on 0.0.0.0:" + port);});
+httpserver.listen(port, "0.0.0.0", function() {console.log("Manifest server listening on 0.0.0.0:" + port + "\nManifest URLS:\nhttp://localhost:" + port + "/manifests.json");});

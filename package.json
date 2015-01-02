@@ -3,7 +3,7 @@
 	"name": "catapult",
 	"description": "Game development asset server.  Monitors files for changes and notifies clients of changes, serves spreadsheets as json. ",
 	"license": "BSD",
-	"version": "2.0.0",
+	"version": "2.0.2",
 	"keywords": [
 	    "node.js",
 	    "game",
@@ -17,8 +17,7 @@
 	  },
 	"dependencies": {
 		"watch": "^0.13.0",
-		"ws": "^0.6.3",
-		"commander": "latest",
+		"websocket": "^1.0.14",
 		"mime": "latest"
 	},
 	"scripts": {
@@ -29,6 +28,6 @@
 	},
 	"main": "lib/catapult.js",
 	"bin": {
-		"catapult": "node bin/catapult.js"
+		"catapult": "./bin/catapult.js"
 	}
 }
