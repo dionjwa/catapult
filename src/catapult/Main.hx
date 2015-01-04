@@ -8,5 +8,6 @@ class Main
 		catapult.ManifestFileWatcher;
 		catapult.ManifestServer;
 		catapult.ManifestWebsocket;
+		t9.remoting.ServeFile;
 	}
 }

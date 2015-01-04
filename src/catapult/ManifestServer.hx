@@ -127,12 +127,17 @@ class ManifestServer
 		var queryString = Node.url.parse(req.url);
 		var filePath = queryString.pathname.substr(1);
 		var pathTokens = filePath.split(Node.path.sep);
+		if(pathTokens[0] == 'assets') {
+			pathTokens.shift();
+		}
 		var manifest = Reflect.field(manifests.manifests, pathTokens[0]);
 		if (manifest == null) {
 			return false;
 		}
 
-		var fullFilePath = Node.path.join(manifestsPath, filePath);
+		var fullFilePath = Node.path.join(manifestsPath, pathTokens.join('/'));
+		trace('fullFilePath:' + fullFilePath);
+		// fullFilePath = fullFilePath.replace('assets/assets', 'assets');
 		if (Node.fs.existsSync(fullFilePath)) {
 			ServeFile.serveFile(fullFilePath, res);
 			return true;
